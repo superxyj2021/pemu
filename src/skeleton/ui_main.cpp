@@ -91,11 +91,11 @@ void UiMain::setConfig(PEMUConfig *cfg) {
     pConfig = cfg;
 
     // add shaders, if any
-    auto shaderList = getShaderList();
-    if (shaderList) {
-        pConfig->get(PEMUConfig::OptId::EMU_SHADER)->setArray(shaderList->getNames(), 0);
-        pConfig->get(PEMUConfig::OptId::EMU_SHADER)->setFlags(0);
-    }
+//    auto shaderList = getShaderList();
+//    if (shaderList) {
+//        pConfig->get(PEMUConfig::OptId::EMU_SHADER)->setArray(shaderList->getNames(), 0);
+//        pConfig->get(PEMUConfig::OptId::EMU_SHADER)->setFlags(0);
+//    }
 }
 
 void UiMain::updateInputMapping(bool isRomConfig) {

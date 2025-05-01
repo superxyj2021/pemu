@@ -40,6 +40,8 @@ namespace pemu {
         void setGames(const std::vector<ss_api::Game> &games);
 
         void setVisibility(c2d::Visibility visibility, bool tweenPlay = false) override;
+		
+		UIRomInfo *getRomInfo() { return pRomInfo; };
 
     protected:
 

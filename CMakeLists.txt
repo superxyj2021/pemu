@@ -30,9 +30,9 @@ add_subdirectory(external/sscrap)
 
 # required for cmake toolchain setup
 project(pemu)
-set(PROJECT_AUTHOR cpasjuste)
+set(PROJECT_AUTHOR cpasjuste,superxyj@bilibili)
 set(VERSION_MAJOR 6)
-set(VERSION_MINOR 7)
+set(VERSION_MINOR 7.20250501)
 
 # pemu (ui)
 add_subdirectory(src/skeleton)

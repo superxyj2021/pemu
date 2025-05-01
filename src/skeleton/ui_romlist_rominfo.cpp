@@ -153,15 +153,15 @@ void UIRomInfo::load(const Game &game) {
         printf("UIRomInfo::load(%s)\n", game.name.c_str());
         // load title/preview texture
         loadTexture(game);
-        showText(systemText, "System: " + game.system.name);
-        showText(developerText, "Developer: " + game.developer.name);
-        showText(editorText, "Editor: " + game.editor.name);
-        showText(dateText, "Date: " + game.date);
-        showText(genreText, "Genre: " + game.genre.name);
-        showText(playersText, "Players: " + game.players);
-        showText(ratingText, "Rating: " + std::to_string(game.rating));
-        showText(cloneofText, "Clone Of: " + (game.cloneOf.empty() ? "NONE" : game.cloneOf));
-        showText(filenameText, "File: " + game.path);
+        showText(systemText, TEXT_ROMINFO_SYSTEM + game.system.name);
+        showText(developerText, TEXT_ROMINFO_DEVELOPER + game.developer.name);
+        showText(editorText, TEXT_ROMINFO_EDITOR + game.editor.name);
+        showText(dateText, TEXT_ROMINFO_DATE + game.date);
+        showText(genreText, TEXT_ROMINFO_GENRE + game.genre.name);
+        showText(playersText, TEXT_ROMINFO_PLAYERS + game.players);
+        showText(ratingText, TEXT_ROMINFO_RATING + std::to_string(game.rating));
+        showText(cloneofText, TEXT_ROMINFO_CLONEOF + (game.cloneOf.empty() ? "无" : game.cloneOf));
+        showText(filenameText, TEXT_ROMINFO_FILENAME + game.path);
         showText(synoText, game.synopsis);
     }
 }

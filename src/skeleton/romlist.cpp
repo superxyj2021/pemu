@@ -44,7 +44,7 @@ RomList::RomList(UiMain *_ui, const std::string &emuVersion, const std::vector<s
     rect->add(version);
 
     ui->add(rect);
-    //ui->flip();
+    ui->flip();
     // UI
 
     gameList = new GameList();
@@ -55,26 +55,27 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
     float time_start = ui->getElapsedTime().asSeconds();
     auto cfg = ui->getConfig();
     p_cb = cb;
-    m_games_count = m_games_available_count = 0;
-
-    ui->flip();
+    m_count = 0;
 
     auto romPaths = cfg->getRomPaths();
     for (const auto &p: romPaths) {
         std::string gameListPath = p.path + "gamelist.xml";
-        gameList->append(gameListPath, p.path, false, filters, p.system, false, [this](Game *game) {
+        // gameList->append(gameListPath, p.path, false, filters, p.system, false, [this](Game *game) {
+		// superxyj modified, reduce scanning time by loading only the rom files exists
+        gameList->append(gameListPath, p.path, false, filters, p.system, true, [this](Game *game) {
             if (p_cb) p_cb(game);
-            m_games_count++;
-            if (game->available) m_games_available_count++;
-            if (!(m_games_count % 200)) {
-                setLoadingText("Games: %li / %li", m_games_available_count, m_games_count);
+            m_count++;
+            if (!(m_count % 10)) {
+                setLoadingText(TEXT_MSG_GAMES_SEARCH, m_count);
             }
         });
-        setLoadingText("Games: %li / %li", m_games_available_count, m_games_count);
+        //setLoadingText(TEXT_MSG_GAMES_SEARCH, m_games_available_count, m_games_count);
+		setLoadingText(TEXT_MSG_GAMES_SEARCH, m_count);
         printf("RomList::build: %s, games found: %zu / %zu (system: %s (0x%08x))\n",
                gameListPath.c_str(), gameList->getAvailableCount(),
                gameList->games.size(), p.system.name.c_str(), p.system.id);
     }
+	
 
     // sort games
     printf("RomList::build: sorting games...\n");
@@ -91,13 +92,15 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
     // add filtering options
     printf("RomList::build: add filtering options...\n");
     auto grp = cfg->getGroup(PEMUConfig::GrpId::UI_FILTERING);
-    grp->getOption(PEMUConfig::OptId::UI_FILTER_SYSTEM)->setArray(gameList->systemList.getNames(), 0);
-    grp->getOption(PEMUConfig::OptId::UI_FILTER_GENRE)->setArray(gameList->getGenreNames(), 0);
-    grp->getOption(PEMUConfig::OptId::UI_FILTER_DATE)->setArray(gameList->getDates(), 0);
-    grp->getOption(PEMUConfig::OptId::UI_FILTER_EDITOR)->setArray(gameList->getEditorNames(), 0);
-    grp->getOption(PEMUConfig::OptId::UI_FILTER_DEVELOPER)->setArray(gameList->getDeveloperNames(), 0);
-    grp->getOption(PEMUConfig::OptId::UI_FILTER_PLAYERS)->setArray(gameList->getPlayersNames(), 0);
-    grp->getOption(PEMUConfig::OptId::UI_FILTER_RATING)->setArray(gameList->getRatingNames(), 0);
+    grp->addOption({"FILTER_SYSTEM", gameList->systemList.getNames(), 0,
+                    PEMUConfig::OptId::UI_FILTER_SYSTEM, "", TEXT_MENU_FILTER_SYSTEM})->setFlags(PEMUConfig::Flags::HIDDEN);
+	//superxyj added, to remove these infrequently used filters
+    //grp->addOption({"FILTER_GENRE", gameList->getGenreNames(), 0, PEMUConfig::OptId::UI_FILTER_GENRE, "", TEXT_MENU_FILTER_GENRE});
+    //grp->addOption({"FILTER_DATE", gameList->getDates(), 0, PEMUConfig::OptId::UI_FILTER_DATE, "", TEXT_MENU_FILTER_DATE});
+    //grp->addOption({"FILTER_EDITOR", gameList->getEditorNames(), 0, PEMUConfig::OptId::UI_FILTER_EDITOR, "", TEXT_MENU_FILTER_EDITOR});
+    //grp->addOption({"FILTER_DEVELOPER", gameList->getDeveloperNames(), 0, PEMUConfig::OptId::UI_FILTER_DEVELOPER, "", TEXT_MENU_FILTER_DEVELOPER});
+    //grp->addOption({"FILTER_PLAYERS", gameList->getPlayersNames(), 0, PEMUConfig::OptId::UI_FILTER_PLAYERS, "", TEXT_MENU_FILTER_PLAYERS});
+    //grp->addOption({"FILTER_RATING", gameList->getRatingNames(), 0, PEMUConfig::OptId::UI_FILTER_RATING, "", TEXT_MENU_FILTER_RATING});
 
     // custom core hide/show flags
     auto ids = cfg->getCoreHiddenOptionToEnable();
