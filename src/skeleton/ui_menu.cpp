@@ -21,7 +21,7 @@ public:
         p_name->setOutlineColor(m_textGroup.outlineColor);
         p_name->setOrigin(Origin::Left);
         p_name->setPosition(2 * pMain->getScaling().x, MenuLine::getSize().y / 2);
-        p_name->setSizeMax((MenuLine::getSize().x * 0.48f), 0);
+        p_name->setSizeMax((MenuLine::getSize().x * 0.55f), 0);
         MenuLine::add(p_name);
 
         p_value = new Text("OPTION VALUE", m_textGroup.size, font);
@@ -29,8 +29,8 @@ public:
         p_value->setOutlineThickness(m_textGroup.outlineSize);
         p_value->setOutlineColor(m_textGroup.outlineColor);
         p_value->setOrigin(Origin::Left);
-        p_value->setPosition((MenuLine::getSize().x * 0.5f), MenuLine::getSize().y / 2);
-        p_value->setSizeMax(MenuLine::getSize().x * 0.48f, 0);
+        p_value->setPosition((MenuLine::getSize().x * 0.6f), MenuLine::getSize().y / 2);
+        p_value->setSizeMax(MenuLine::getSize().x * 0.38f, 0);
         MenuLine::add(p_value);
 
         p_sprite = new Sprite();
