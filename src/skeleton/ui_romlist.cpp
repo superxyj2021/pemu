@@ -141,14 +141,17 @@ void UIRomList::updateRomList() {
     sortRomList();
 
     std::string sys = pMain->getConfig()->get(PEMUConfig::OptId::UI_FILTER_SYSTEM)->getString();
-    int systemId = sys == "ALL" ? -1 : pRomList->gameList->systemList.findByName(sys).id;
+    //int systemId = sys == "ALL" ? -1 : pRomList->gameList->systemList.findByName(sys).id;
+	if ( sys == "ALL" ) {
+		sys = TEXT_GAME_ALL;
+	}
     if (mShowSystemText && pTitleText) {
-        pTitleText->setString(sys + " - " +
-                              std::to_string(mGameList.getAvailableCount()) + "/" +
-                              std::to_string(pRomList->gameList->getCount(systemId)));
+        pTitleText->setString(sys + " (" +
+                              std::to_string(mGameList.getAvailableCount()) + ")");// + "/" +
+                              //std::to_string(pRomList->gameList->getCount(systemId)));
     } else if (pTitleText) {
-        pTitleText->setString(std::to_string(mGameList.getAvailableCount()) + "/" +
-                              std::to_string(pRomList->gameList->getCount(systemId)));
+        pTitleText->setString(std::to_string(mGameList.getAvailableCount()));// + "/" +
+                              //std::to_string(pRomList->gameList->getCount(systemId)));
     }
 
     if (pListBox) {
@@ -170,21 +173,24 @@ void UIRomList::filterRomList() {
                              pRomList->gameListFav : pRomList->gameList;
     std::string system = cfg->get(PEMUConfig::OptId::UI_FILTER_SYSTEM)->getString();
     int systemId = system == "ALL" ? -1 : list->systemList.findByName(system).id;
-    std::string editor = cfg->get(PEMUConfig::OptId::UI_FILTER_EDITOR)->getString();
-    int editorId = editor == "ALL" ? -1 : list->findEditorByName(editor).id;
-    std::string dev = cfg->get(PEMUConfig::OptId::UI_FILTER_DEVELOPER)->getString();
-    int devId = dev == "ALL" ? -1 : list->findDeveloperByName(dev).id;
-    int players = Utility::parseInt(cfg->get(PEMUConfig::OptId::UI_FILTER_PLAYERS)->getString(), -1);
-    int rating = Utility::parseInt(cfg->get(PEMUConfig::OptId::UI_FILTER_RATING)->getString(), -1);
-    std::string genre = cfg->get(PEMUConfig::OptId::UI_FILTER_GENRE)->getString();
-    int genreId = genre == "ALL" ? -1 : list->findGenreByName(genre).id;
+    //std::string editor = cfg->get(PEMUConfig::OptId::UI_FILTER_EDITOR)->getString();
+    //int editorId = editor == "ALL" ? -1 : list->findEditorByName(editor).id;
+    //std::string dev = cfg->get(PEMUConfig::OptId::UI_FILTER_DEVELOPER)->getString();
+    //int devId = dev == "ALL" ? -1 : list->findDeveloperByName(dev).id;
+    //int players = Utility::parseInt(cfg->get(PEMUConfig::OptId::UI_FILTER_PLAYERS)->getString(), -1);
+    //int rating = Utility::parseInt(cfg->get(PEMUConfig::OptId::UI_FILTER_RATING)->getString(), -1);
+    //std::string genre = cfg->get(PEMUConfig::OptId::UI_FILTER_GENRE)->getString();
+    //int genreId = genre == "ALL" ? -1 : list->findGenreByName(genre).id;
 
     //printf("UIRomList::filterRomList: system: %s (0x%08x)\n", system.c_str(), systemId);
     mGameList = list->filter(
-            cfg->get(PEMUConfig::OptId::UI_FILTER_AVAILABLE)->getInteger(),
-            !cfg->get(PEMUConfig::OptId::UI_FILTER_CLONES)->getInteger(),
-            systemId, -1, editorId, devId, players, rating, -1, genreId, "ALL",
-            cfg->get(PEMUConfig::OptId::UI_FILTER_DATE)->getString()
+			true, 
+			cfg->get(PEMUConfig::OptId::UI_FILTER_CLONES)->getInteger(), 
+			systemId, -1, -1, -1, -1, -1, -1, -1, "ALL", "ALL"
+            //cfg->get(PEMUConfig::OptId::UI_FILTER_AVAILABLE)->getInteger(),
+            //!cfg->get(PEMUConfig::OptId::UI_FILTER_CLONES)->getInteger(),
+            //systemId, -1, editorId, devId, players, rating, -1, genreId, "ALL",
+            //cfg->get(PEMUConfig::OptId::UI_FILTER_DATE)->getString()
     );
 }
 
@@ -266,13 +272,13 @@ bool UIRomList::onInput(c2d::Input::Player *players) {
         Game game = getSelection();
         if (game.id > 0 && !pRomList->gameListFav->exist(game.id)) {
             int res = pMain->getUiMessageBox()->show(
-                    "FAVORITES", "Add to favorites ?", "OK", "CANCEL");
+                    TEXT_MSG_TITTLE_FAVORITES, TEXT_MSG_ADD_FAVORITES, TEXT_BUTTON_OK, TEXT_BUTTON_CANCEL);
             if (res == MessageBox::LEFT) {
                 pRomList->addFav(game);
             }
         } else if (game.id > 0 && pRomList->gameListFav->exist(game.id)) {
             int res = pMain->getUiMessageBox()->show(
-                    "FAVORITES", "Remove from favorites ?", "OK", "CANCEL");
+                    TEXT_MSG_TITTLE_FAVORITES, TEXT_MSG_REMOVE_FAVORITES, TEXT_BUTTON_OK, TEXT_BUTTON_CANCEL);
             if (res == MessageBox::LEFT) {
                 pRomList->removeFav(game);
                 if (pMain->getConfig()->get(PEMUConfig::OptId::UI_FILTER_FAVORITES)->getInteger()) {
@@ -295,15 +301,31 @@ bool UIRomList::onInput(c2d::Input::Player *players) {
             Option *sysOpt = pMain->getConfig()->get(PEMUConfig::OptId::UI_FILTER_SYSTEM);
             size_t sysCount = sysOpt->getArray().size();
             if (sysCount > 1) {
-                sysOpt->setArrayMovePrev();
-                updateRomList();
+				for (size_t i = 0; i < sysCount ; i++)
+				{
+                	sysOpt->setArrayMovePrev();
+                	updateRomList();
+					if(!mGameList.games.empty())
+						return true;
+				}
+				// no available system, set system to all
+				sysOpt->setArrayIndex(0);
+				updateRomList();
             }
         } else if (buttons & Input::Button::RT) {
             Option *sysOpt = pMain->getConfig()->get(PEMUConfig::OptId::UI_FILTER_SYSTEM);
             size_t sysCount = sysOpt->getArray().size();
             if (sysCount > 1) {
-                sysOpt->setArrayMoveNext();
-                updateRomList();
+				for (size_t i = 0; i < sysCount; i++)
+				{
+                	sysOpt->setArrayMoveNext();
+               	 	updateRomList();
+					if(!mGameList.games.empty())
+						return true;
+				}
+				// no available system, set system to all
+				sysOpt->setArrayIndex(0);
+				updateRomList();				
             }
         }
     }

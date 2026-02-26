@@ -33,7 +33,7 @@ PGBAUiEmu::PGBAUiEmu(UiMain *ui) : UiEmu(ui) {
 int PGBAUiEmu::load(const ss_api::Game &game) {
     currentGame = game;
     getUi()->getUiProgressBox()->setTitle(game.name);
-    getUi()->getUiProgressBox()->setMessage("Please wait...");
+    getUi()->getUiProgressBox()->setMessage(TEXT_MSG_PLEASE_WAIT);
     getUi()->getUiProgressBox()->setProgress(0);
     getUi()->getUiProgressBox()->setVisibility(Visibility::Visible);
     getUi()->getUiProgressBox()->setLayer(1000);
@@ -44,7 +44,7 @@ int PGBAUiEmu::load(const ss_api::Game &game) {
     s_core = mCoreFind(path.c_str());
     if (!s_core) {
         getUi()->getUiProgressBox()->setVisibility(Visibility::Hidden);
-        getUi()->getUiMessageBox()->show("ERROR", "INVALID ROM FILE", "OK");
+        getUi()->getUiMessageBox()->show(TEXT_MSG_TITTLE_ERROR, TEXT_MSG_PSNES_INVALID_ROM, TEXT_BUTTON_OK);
         return -1;
     }
 
@@ -98,7 +98,7 @@ int PGBAUiEmu::load(const ss_api::Game &game) {
     // load rom
     if (!mCoreLoadFile(s_core, path.c_str())) {
         getUi()->getUiProgressBox()->setVisibility(Visibility::Hidden);
-        getUi()->getUiMessageBox()->show("ERROR", "INVALID ROM FILE", "OK");
+        getUi()->getUiMessageBox()->show(TEXT_MSG_TITTLE_ERROR, TEXT_MSG_PSNES_INVALID_ROM, TEXT_BUTTON_OK);
         return -1;
     }
 

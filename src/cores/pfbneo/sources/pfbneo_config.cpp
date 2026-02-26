@@ -26,19 +26,19 @@ PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(rende
         return;
     }
     group->addOption(
-            {"FORCE_60HZ", {"OFF", "ON"}, 1, EMU_FORCE_60HZ, C2D_CONFIG_RESTART_EMU_NEEDED});
+            {"FORCE_60HZ", {"OFF", "ON"}, 1, EMU_FORCE_60HZ, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_FORCE_60HZ});
     group->addOption({"AUDIO_FREQUENCY", {"11025", "22050", "32000", "44100", "48000"},
-                      3, EMU_AUDIO_FREQ, C2D_CONFIG_RESTART_EMU_NEEDED});
+                      3, EMU_AUDIO_FREQ, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_AUDIO_FREQUENCY});
     group->addOption({"AUDIO_INTERPOLATION", {"0", "1", "3"},
-                      2, EMU_AUDIO_INTERPOLATION, C2D_CONFIG_RESTART_EMU_NEEDED});
+                      2, EMU_AUDIO_INTERPOLATION, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_AUDIO_INTERPOLATION});
     group->addOption({"AUDIO_FM_INTERPOLATION", {"0", "1", "3"},
-                      2, EMU_AUDIO_FMINTERPOLATION, C2D_CONFIG_RESTART_EMU_NEEDED});
+                      2, EMU_AUDIO_FMINTERPOLATION, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_AUDIO_FM_INTERPOLATION});
 #ifdef __VITA__
     group->addOption({"ROTATION", {"OFF", "ON", "FLIP", "CAB MODE"},
-                      1, EMU_ROTATION, C2D_CONFIG_RESTART_EMU_NEEDED});
+                      1, EMU_ROTATION, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_ROTATION});
 #else
     group->addOption({"ROTATION", {"OFF", "ON", "FLIP"},
-                      1, EMU_ROTATION, C2D_CONFIG_RESTART_EMU_NEEDED});
+                      1, EMU_ROTATION, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_ROTATION});
 #endif
     group->addOption(
             {"NEOBIOS", {"UNIBIOS_4_0", "UNIBIOS_3_3", "UNIBIOS_3_2", "UNIBIOS_3_1",
@@ -46,12 +46,12 @@ PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(rende
                          "MVS_USA_V5S2", "MVS_USA_V5S4", "MVS_USA_V5S6", "MVS_JPN_V6",
                          "MVS_JPN_V5", "MVS_JPN_V3S4", "MVS_JPN_J3", "AES_ASIA",
                          "AES_JAPAN", "NEO_MVH_MV1CA", "NEO_MVH_MV1CJ", "DECK_V6", "DEVKIT"},
-             0, EMU_NEOBIOS, C2D_CONFIG_RESTART_EMU_NEEDED});
+             0, EMU_NEOBIOS, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_NEOBIOS});
 #ifdef __PFBA_ARM__
     // do not use unibios as default on vita for cyclone asm compatibility
     group->getOption(EMU_NEOBIOS)->setArrayIndex(4);
     group->addOption({"FRAMESKIP", {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
-                      0, EMU_FRAMESKIP, C2D_CONFIG_RESTART_EMU_NEEDED});
+                      0, EMU_FRAMESKIP, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_FRAMESKIP});
 #endif
 
 #if defined(__PS4__) || defined(ANDROID)

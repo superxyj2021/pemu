@@ -20,22 +20,22 @@ PSNESConfig::PSNESConfig(Renderer *renderer, int version) : PEMUConfig(renderer,
     }
 
     group->addOption({"AUDIO_SYNC", {"OFF", "ON"}, 0, EMU_AUDIO_SYNC,
-                      "ON: PERFECT AUDIO - OFF: MINOR AUDIO STUTTERING (FAVOR FPS)"});
-    group->addOption({"CHEATS", {"OFF", "ON"}, 1, EMU_PSNES_CHEATS});
-    group->addOption({"BLOCk_INVALID_VRAM", {"OFF", "ON"}, 1, EMU_PSNES_BLOCK_VRAM});
-    group->addOption({"TRANSPARENCY", {"OFF", "ON"}, 1, EMU_PSNES_TRANSPARENCY});
-    group->addOption({"DISPLAY_MESSAGES", {"OFF", "ON"}, 1, EMU_PSNES_DISPLAY_MESSAGES});
+                      TEXT_MENU_AUDIO_SYNC_COMMENT, TEXT_MENU_AUDIO_SYNC});
+    group->addOption({"CHEATS", {"OFF", "ON"}, 1, EMU_PSNES_CHEATS, "", TEXT_MENU_CHEATS});
+    group->addOption({"BLOCk_INVALID_VRAM", {"OFF", "ON"}, 1, EMU_PSNES_BLOCK_VRAM, "", TEXT_MENU_BLOCK_INVALID_VRAM});
+    group->addOption({"TRANSPARENCY", {"OFF", "ON"}, 1, EMU_PSNES_TRANSPARENCY, "", TEXT_MENU_TRANSPARENCY});
+    group->addOption({"DISPLAY_MESSAGES", {"OFF", "ON"}, 1, EMU_PSNES_DISPLAY_MESSAGES, "", TEXT_MENU_DISPLAY_MESSAGES});
     group->addOption({"FRAMESKIP",
                       {"OFF", "AUTO", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
-                      0, EMU_PSNES_FRAMESKIP});
+                      0, EMU_PSNES_FRAMESKIP, "", TEXT_MENU_FRAMESKIP});
 #ifdef __VITA__
     get(EMU_PSNES_FRAMESKIP)->setArrayIndex(3);
 #endif
-    group->addOption({"TURBO_MODE", {"OFF", "ON"}, 0, EMU_PSNES_TURBO_MODE});
+    group->addOption({"TURBO_MODE", {"OFF", "ON"}, 0, EMU_PSNES_TURBO_MODE, "", TEXT_MENU_TURBO_MODE});
     group->addOption({"TURBO_FRAMESKIP",
                       {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
                        "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25"},
-                      15, EMU_PSNES_TURBO_FRAMESKIP});
+                      15, EMU_PSNES_TURBO_FRAMESKIP, "", TEXT_MENU_TURBO_FRAMESKIP});
 
     // no need for auto-scaling mode
     getOption(EMU_SCALING_MODE)->setArray({"ASPECT", "INTEGER"}, 0);

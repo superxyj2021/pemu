@@ -53,7 +53,9 @@ PFBNEOUtility::GameInfo PFBNEOUtility::getGameInfo(const Game &game) {
     auto driver = setDriverActive(game);
     if (driver < nBurnDrvCount) {
         GameInfo gameInfo;
-        gameInfo.name = BurnDrvGetTextA(DRV_FULLNAME) ? BurnDrvGetTextA(DRV_FULLNAME) : "";
+        // gameInfo.name = BurnDrvGetTextA(DRV_FULLNAME) ? BurnDrvGetTextA(DRV_FULLNAME) : "";
+		// superxyj modified, try to use the name in the xml, otherwise take the name in the fbneo drivers
+		gameInfo.name = game.name.empty() ? BurnDrvGetTextA(DRV_FULLNAME) : game.name;
         gameInfo.parent = BurnDrvGetTextA(DRV_PARENT) ? BurnDrvGetTextA(DRV_PARENT) : "";
         gameInfo.manufacturer = BurnDrvGetTextA(DRV_MANUFACTURER) ? BurnDrvGetTextA(DRV_MANUFACTURER) : "";
         gameInfo.players = BurnDrvGetMaxPlayers();
@@ -78,7 +80,7 @@ PFBNEOUtility::GameInfo PFBNEOUtility::getGameInfo(const Game &game) {
             switch (prefix) {
                 case HARDWARE_PREFIX_MISC_PRE90S:
                     gameInfo.sysId = 0x43214321;
-                    gameInfo.sysName = "PRE-90S (MISC)";
+                    gameInfo.sysName = TEXT_ROM_SYSTEM_PRE_90S;
                     break;
                 case HARDWARE_PREFIX_SEGA:
                     gameInfo.sysName = "SEGA (ARCADE)";
@@ -96,7 +98,7 @@ PFBNEOUtility::GameInfo PFBNEOUtility::getGameInfo(const Game &game) {
                     gameInfo.sysName = "PGM (IGS)";
                     break;
                 case HARDWARE_PREFIX_MISC_POST90S:
-                    gameInfo.sysName = "POST-90S (MISC)";
+                    gameInfo.sysName = TEXT_ROM_SYSTEM_POST_90S;
                     break;
                 case HARDWARE_PREFIX_TAITO:
                     gameInfo.sysName = "TAITO";
@@ -141,4 +143,5 @@ PFBNEOUtility::GameInfo PFBNEOUtility::getGameInfo(const Game &game) {
     }
 
     return {};
+
 }

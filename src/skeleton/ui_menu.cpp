@@ -54,9 +54,9 @@ public:
         // this is a menu title (or custom option)
         if (!option) {
             // custom options
-            if (name == "STATES" || name == "QUIT") {
+            if (name == TEXT_STATES || name == TEXT_QUIT) {
                 p_value->setVisibility(Visibility::Visible);
-                p_value->setString("GO");
+                p_value->setString(TEXT_GO);
                 return;
             }
             p_value->setVisibility(Visibility::Hidden);
@@ -157,7 +157,7 @@ void UiMenu::load(bool isGame) {
         bool useZipName = ui->getConfig()->getOption(PEMUConfig::OptId::UI_SHOW_ZIP_NAMES)->getInteger();
         title->setString(useZipName ? Utility::removeExt(game.path) : game.name);
     } else {
-        title->setString("MAIN OPTIONS");
+        title->setString(TEXT_MAIN_MENU);
     }
 
     // set options items
@@ -169,21 +169,25 @@ void UiMenu::load(bool isGame) {
         if (group.getName() == "ROMS") continue;
         if (isRomMenu && (group.getName() == "UI_OPTIONS" || group.getName() == "UI_FILTERING")) continue;
         // push group title
-        menu_options.push_back({group.getName(), nullptr});
+		// get Chinese name
+        menu_options.push_back({group.getDisplayName(), nullptr});
+		// menu_options.push_back({group.getName(), nullptr});
         auto options = group.getOptions();
         for (auto &option: *options) {
             // skip hidden options
             if (option.getFlags() & PEMUConfig::Flags::HIDDEN) continue;
             // push option
             auto opt = ui->getConfig()->get(option.getId(), isGame);
-            menu_options.push_back({option.getName(), opt});
+			// get Chinese name
+ 			menu_options.push_back({option.getDisplayName(), opt});	
+            // menu_options.push_back({option.getName(), opt});	
         }
     }
 
     // add "OTHER" option menu
-    menu_options.push_back({"OTHER", nullptr});
-    if (isRomMenu) menu_options.push_back({"STATES", nullptr});
-    menu_options.push_back({"QUIT", nullptr});
+    menu_options.push_back({TEXT_OTHER, nullptr});
+    if (isRomMenu) menu_options.push_back({TEXT_STATES, nullptr});
+    menu_options.push_back({TEXT_QUIT, nullptr});
 
     setAlpha(isEmuRunning ? (uint8_t) (alpha - 50) : (uint8_t) alpha);
 
@@ -234,7 +238,7 @@ void UiMenu::onKeyUp() {
 
     // skip menus
     auto opt = menu_options.at(optionIndex + highlightIndex);
-    if (opt.option == nullptr && opt.name != "STATES" && opt.name != "QUIT") {
+    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT) {
         return onKeyUp();
     }
 
@@ -258,7 +262,7 @@ void UiMenu::onKeyDown() {
 
     // skip menus
     auto opt = menu_options.at(optionIndex + highlightIndex);
-    if (opt.option == nullptr && opt.name != "STATES" && opt.name != "QUIT") {
+    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT) {
         return onKeyDown();
     }
 
@@ -308,7 +312,9 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
             case PEMUConfig::OptId::UI_FILTER_RATING:
             case PEMUConfig::OptId::UI_FILTER_DATE:
             case PEMUConfig::OptId::UI_FILTER_GENRE: {
-                std::string name = Utility::toUpper(option->getName());
+				// get Chinese name
+                std::string name = Utility::toUpper(option->getDisplayName());
+				// std::string name = Utility::toUpper(option->getName());
                 std::string value = Utility::toUpper(option->getString());
                 if (option->getComment().empty()) {
                     ui->getUiStatusBox()->show("%s: %s", name.c_str(), value.c_str());
@@ -332,19 +338,18 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
                     float oh = gh * ui->getUiEmu()->getVideo()->getScale().y;
                     float ratio = std::max(ow / oh, oh / ow);
                     ui->getUiStatusBox()->show(
-                            "GAME: %ix%i - RATIO: %.2f | OUTPUT: %ix%i - RATIO: %.2f - SCALING: %.2fx%.2f",
+                            TEXT_MSG_DISPLAY_INFO,
                             (int) gw, (int) gh, gr, (int) ow, (int) oh, ratio,
                             ui->getUiEmu()->getVideo()->getScale().x, ui->getUiEmu()->getVideo()->getScale().y);
                 }
                 break;
             case PEMUConfig::OptId::EMU_SCALING_MODE:
                 if (option->getString() == "AUTO") {
-                    ui->getUiStatusBox()->show("TRY TO KEEP INTEGER SCALING IF ASPECT RATIO IS NOT TOO DIVERGENT");
+                    ui->getUiStatusBox()->show(TEXT_MSG_TRY_TO_KEEP_INTEGER_SCALING);
                 } else if (option->getString() == "ASPECT") {
-                    ui->getUiStatusBox()->show("KEEP GAME ASPECT RATIO - SOME SHADERS MAY NOT RENDER CORRECTLY");
+                    ui->getUiStatusBox()->show(TEXT_MSG_KEEP_ASPECT_RATIO);
                 } else {
-                    ui->getUiStatusBox()->show(
-                            "FORCE INTEGER SCALING - ASPECT RATIO MAY BE WRONG BUT SHADERS WILL RENDER CORRECTLY");
+                    ui->getUiStatusBox()->show(TEXT_MSG_FORCE_INTEGER_SCALING);
                 }
                 if (isEmuRunning) {
                     ui->getUiEmu()->getVideo()->updateScaling();
@@ -385,16 +390,16 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
         auto option = lines.at(highlightIndex)->p_option;
         if (option && option->getFlags() == PEMUConfig::Flags::INPUT) {
             int new_key = 0;
-            int res = ui->getUiMessageBox()->show("NEW INPUT", "PRESS A BUTTON", "", "", &new_key, 9);
+            int res = ui->getUiMessageBox()->show(TEXT_MSG_NEW_INPUT, TEXT_MSG_PRESS_A_BUTTON, "", "", &new_key, 9);
             if (res != MessageBox::TIMEOUT) {
                 needSave = true;
                 option->setInteger(new_key);
                 lines.at(highlightIndex)->refresh();
             }
-        } else if (lines.at(highlightIndex)->p_name->getString() == "STATES") {
+        } else if (lines.at(highlightIndex)->p_name->getString() == TEXT_STATES) {
             setVisibility(Visibility::Hidden, true);
             ui->getUiStateMenu()->setVisibility(Visibility::Visible, true);
-        } else if (lines.at(highlightIndex)->p_name->getString() == "QUIT") {
+        } else if (lines.at(highlightIndex)->p_name->getString() == TEXT_QUIT) {
             if (isEmuRunning) {
                 setVisibility(Visibility::Hidden, true);
                 ui->getUiEmu()->stop();

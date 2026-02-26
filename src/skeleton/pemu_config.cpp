@@ -15,40 +15,40 @@ PEMUConfig::PEMUConfig(Renderer *renderer, const std::string &name, int version)
     /*
      * ROMS PATHS
      */
-    Group roms("ROMS", CFG_ID_ROMS);
+    Group roms("ROMS", CFG_ID_ROMS, "ROMS");
     addGroup(roms);
 
     /// UI_FILTERING
-    Group ui_filtering("UI_FILTERING", UI_FILTERING);
-    ui_filtering.addOption({"FILTER_FAVORITES", {"OFF", "ON"}, 0, UI_FILTER_FAVORITES});
-    ui_filtering.addOption({"FILTER_MISSING", {"OFF", "ON"}, 1, UI_FILTER_AVAILABLE});
-    ui_filtering.addOption({"FILTER_CLONES", {"OFF", "ON"}, 1, UI_FILTER_CLONES})->setFlags(HIDDEN);
-    ui_filtering.addOption({"FILTER_SYSTEM", {"ALL"}, 0, UI_FILTER_SYSTEM})->setFlags(HIDDEN);
-    ui_filtering.addOption({"FILTER_GENRE", {"ALL"}, 0, UI_FILTER_GENRE});
-    ui_filtering.addOption({"FILTER_DATE", {"ALL"}, 0, UI_FILTER_DATE});
-    ui_filtering.addOption({"FILTER_EDITOR", {"ALL"}, 0, UI_FILTER_EDITOR});
-    ui_filtering.addOption({"FILTER_DEVELOPER", {"ALL"}, 0, UI_FILTER_DEVELOPER});
-    ui_filtering.addOption({"FILTER_PLAYERS", {"ALL"}, 0, UI_FILTER_PLAYERS});
-    ui_filtering.addOption({"FILTER_RATING", {"ALL"}, 0, UI_FILTER_RATING});
+    Group ui_filtering("UI_FILTERING", UI_FILTERING, TEXT_MENU_UI_FILTERING);
+    ui_filtering.addOption({"FILTER_FAVORITES", {"OFF", "ON"}, 0, UI_FILTER_FAVORITES, "", TEXT_MENU_FILTER_FAVORITES});
+    //ui_filtering.addOption({"FILTER_MISSING", {"OFF", "ON"}, 1, UI_FILTER_AVAILABLE, "", TEXT_MENU_FILTER_MISSING});
+    ui_filtering.addOption({"FILTER_CLONES", {"OFF", "ON"}, 1, UI_FILTER_CLONES, "", TEXT_MENU_FILTER_CLONES})->setFlags(HIDDEN);
+    //ui_filtering.addOption({"FILTER_SYSTEM", {"ALL"}, 0, UI_FILTER_SYSTEM})->setFlags(HIDDEN);
+    //ui_filtering.addOption({"FILTER_GENRE", {"ALL"}, 0, UI_FILTER_GENRE});
+    //ui_filtering.addOption({"FILTER_DATE", {"ALL"}, 0, UI_FILTER_DATE});
+    //ui_filtering.addOption({"FILTER_EDITOR", {"ALL"}, 0, UI_FILTER_EDITOR});
+    //ui_filtering.addOption({"FILTER_DEVELOPER", {"ALL"}, 0, UI_FILTER_DEVELOPER});
+    //ui_filtering.addOption({"FILTER_PLAYERS", {"ALL"}, 0, UI_FILTER_PLAYERS});
+    //ui_filtering.addOption({"FILTER_RATING", {"ALL"}, 0, UI_FILTER_RATING});
     addGroup(ui_filtering);
 
     /// UI_OPTIONS
-    Group main("UI_OPTIONS", UI_OPTIONS);
-    main.addOption({"SHOW_ZIP_NAMES", {"OFF", "ON"}, 1, UI_SHOW_ZIP_NAMES});
+    Group main("UI_OPTIONS", UI_OPTIONS, TEXT_MENU_UI_OPTIONS);
+    main.addOption({"SHOW_ZIP_NAMES", {"OFF", "ON"}, 1, UI_SHOW_ZIP_NAMES, "", TEXT_MENU_SHOW_ZIP_NAMES});
 #ifdef __FULLSCREEN__
-    main.addOption({"FULLSCREEN", {"OFF", "ON"}, 1, UI_FULLSCREEN, PEMU_CONFIG_RESTART_NEEDED});
+    main.addOption({"FULLSCREEN", {"OFF", "ON"}, 1, UI_FULLSCREEN, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_FULLSCREEN});
 #endif
     Vector2i displaySize = C2DDevice::getDisplaySize();
     int aspect_index = (float) displaySize.x / (float) displaySize.y > 1.33f ? 0 : 1;
     main.addOption({
         "SKIN_ASPECT", {"16/9", "4/3"}, aspect_index,
-        UI_SKIN_ASPECT, PEMU_CONFIG_RESTART_NEEDED
+        UI_SKIN_ASPECT, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_SKIN_ASPECT
     });
     main.addOption({
         "FONT_SCALING", {"0", "1", "2", "3", "4", "5"}, 0,
-        UI_FONT_SCALING, PEMU_CONFIG_RESTART_NEEDED
+        UI_FONT_SCALING, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_FONT_SCALING
     });
-    main.addOption({"VIDEO_SNAP_DELAY", {"3", "5", "7", "10"}, 1, UI_VIDEO_SNAP_DELAY});
+    main.addOption({"VIDEO_SNAP_DELAY", {"3", "5", "7", "10"}, 1, UI_VIDEO_SNAP_DELAY, "", TEXT_MENU_VIDEO_SNAP_DELAY});
 
     // build  skin list
     std::vector<std::string> skins;
@@ -85,92 +85,93 @@ PEMUConfig::PEMUConfig(Renderer *renderer, const std::string &name, int version)
             index = (int) i;
         }
     }
-    main.addOption({"SKIN", skins, index, UI_SKIN});
+    main.addOption({"SKIN", skins, index, UI_SKIN, "", TEXT_MENU_SKIN});
     addGroup(main);
 
     /*
      * Emulators options
      */
-    Group emu_grp("EMULATION", EMULATION);
+    Group emu_grp("EMULATION", EMULATION, TEXT_MENU_EMULATION);
     if (displaySize.y > 1080) {
         emu_grp.addOption(
             {
                 "SCALING", {"NONE", "2X", "3X", "4X", "5X", "6X", "7X", "8X", "9X", "FIT", "FULL"}, 9,
-                EMU_SCALING
+                EMU_SCALING, "", TEXT_MENU_SCALING
             });
     } else if (displaySize.y > 720) {
-        emu_grp.addOption({"SCALING", {"NONE", "2X", "3X", "4X", "FIT", "FULL"}, 4, EMU_SCALING});
+        emu_grp.addOption({"SCALING", {"NONE", "2X", "3X", "4X", "FIT", "FULL"}, 4, EMU_SCALING, "", TEXT_MENU_SCALING});
     } else if (displaySize.y > 544) {
-        emu_grp.addOption({"SCALING", {"NONE", "2X", "3X", "FIT", "FULL"}, 3, EMU_SCALING});
+        emu_grp.addOption({"SCALING", {"NONE", "2X", "3X", "FIT", "FULL"}, 3, EMU_SCALING, "", TEXT_MENU_SCALING});
     } else if (displaySize.y > 240) {
-        emu_grp.addOption({"SCALING", {"NONE", "2X", "FIT", "FULL"}, 2, EMU_SCALING});
+        emu_grp.addOption({"SCALING", {"NONE", "2X", "FIT", "FULL"}, 2, EMU_SCALING, "", TEXT_MENU_SCALING});
     } else {
-        emu_grp.addOption({"SCALING", {"NONE", "FIT", "FULL"}, 1, EMU_SCALING});
+        emu_grp.addOption({"SCALING", {"NONE", "FIT", "FULL"}, 1, EMU_SCALING, "", TEXT_MENU_SCALING});
     }
 
-    emu_grp.addOption({"SCALING_MODE", {"AUTO", "ASPECT", "INTEGER"}, 1, EMU_SCALING_MODE});
-    emu_grp.addOption({"FILTER", {std::string("POINT"), std::string("LINEAR")}, 1, EMU_FILTER});
+    emu_grp.addOption({"SCALING_MODE", {"AUTO", "ASPECT", "INTEGER"}, 1, EMU_SCALING_MODE, "", TEXT_MENU_SCALING_MODE});
+    emu_grp.addOption({"FILTER", {std::string("POINT"), std::string("LINEAR")}, 1, EMU_FILTER, "", TEXT_MENU_FILTER});
     if (const auto shaderList = p_renderer->getShaderList()) {
-        emu_grp.addOption({"EFFECT", shaderList->getNames(), 0, EMU_SHADER});
+        emu_grp.addOption({"EFFECT", shaderList->getNames(), 0, EMU_SHADER, "", TEXT_MENU_EFFECT});
     } else {
-        emu_grp.addOption({"EFFECT", {"c2d-texture"}, 0, EMU_SHADER})->setFlags(HIDDEN);
+        emu_grp.addOption({"EFFECT", {"c2d-texture"}, 0, EMU_SHADER, "", TEXT_MENU_EFFECT})->setFlags(HIDDEN);
     }
+	//emu_grp.addOption({"EFFECT", {"c2d-texture", "crt-aperture", "crt-caligari", "crt-cgwg-fast", "crt-easymode", "crt-fakelottes", "crt-geom", "crt-geom-flat", "crt-hyllian", "crt-lottes-fast", "crt-lottes", "crt-mattias", "crt-nes-mini", "crt-zfast", "handheld-bevel", "handheld-dot", "handheld-lcd1x", "handheld-lcd3x", "handheld-retro-v2", "handheld-zfast-lcd", "interpolation-aann", "interpolation-pixellate", "interpolation-quilez", "interpolation-sharp-bilinear", "interpolation-sharp-bilinear-scanlines", "scanline-simple", "sharp-2xsal", "sharp-sabr-v3.0", "sharp-supereagle", "sharp-xbrz-freescale"}, 0, PEMUConfig::OptId::EMU_SHADER, "", TEXT_MENU_EFFECT});
 #ifdef __VITA__
-    emu_grp.addOption({"WAIT_RENDERING", {"OFF", "ON"}, 1, EMU_WAIT_RENDERING});
+    emu_grp.addOption({"WAIT_RENDERING", {"OFF", "ON"}, 1, EMU_WAIT_RENDERING, "", TEXT_MENU_WAIT_RENDERING});
 #endif
-    emu_grp.addOption({"SHOW_FPS", {"OFF", "ON"}, 0, EMU_SHOW_FPS});
+    emu_grp.addOption({"SHOW_FPS", {"OFF", "ON"}, 0, EMU_SHOW_FPS, "", TEXT_MENU_SHOW_FPS});
     addGroup(emu_grp);
 
     /*
      * Inputs options
      */
-    Group joy_grp("GAMEPAD", GAMEPAD);
-    joy_grp.addOption({"JOY_UP", KEY_JOY_UP_DEFAULT, JOY_UP})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_DOWN", KEY_JOY_DOWN_DEFAULT, JOY_DOWN})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_LEFT", KEY_JOY_LEFT_DEFAULT, JOY_LEFT})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_RIGHT", KEY_JOY_RIGHT_DEFAULT, JOY_RIGHT})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_A", KEY_JOY_A_DEFAULT, JOY_A})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_B", KEY_JOY_B_DEFAULT, JOY_B})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_X", KEY_JOY_X_DEFAULT, JOY_X})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_Y", KEY_JOY_Y_DEFAULT, JOY_Y})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_LT", KEY_JOY_LT_DEFAULT, JOY_LT})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_RT", KEY_JOY_RT_DEFAULT, JOY_RT})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_LB", KEY_JOY_LB_DEFAULT, JOY_LB})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_RB", KEY_JOY_RB_DEFAULT, JOY_RB})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_SELECT", KEY_JOY_SELECT_DEFAULT, JOY_SELECT})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_START", KEY_JOY_START_DEFAULT, JOY_START})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_MENU1", KEY_JOY_MENU1_DEFAULT, JOY_MENU1})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_MENU2", KEY_JOY_MENU2_DEFAULT, JOY_MENU2})->setFlags(INPUT);
-    joy_grp.addOption({"JOY_AXIS_LX", KEY_JOY_AXIS_LX, JOY_AXIS_LX})->setFlags(INPUT | HIDDEN);
-    joy_grp.addOption({"JOY_AXIS_LY", KEY_JOY_AXIS_LY, JOY_AXIS_LY})->setFlags(INPUT | HIDDEN);
-    joy_grp.addOption({"JOY_AXIS_RX", KEY_JOY_AXIS_RX, JOY_AXIS_RX})->setFlags(INPUT | HIDDEN);
-    joy_grp.addOption({"JOY_AXIS_RY", KEY_JOY_AXIS_RY, JOY_AXIS_RY})->setFlags(INPUT | HIDDEN);
+    Group joy_grp("GAMEPAD", GAMEPAD, TEXT_MENU_GAMEPAD);
+    joy_grp.addOption({"JOY_UP", KEY_JOY_UP_DEFAULT, JOY_UP, "", TEXT_MENU_JOY_UP})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_DOWN", KEY_JOY_DOWN_DEFAULT, JOY_DOWN, "", TEXT_MENU_JOY_DOWN})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_LEFT", KEY_JOY_LEFT_DEFAULT, JOY_LEFT, "", TEXT_MENU_JOY_LEFT})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_RIGHT", KEY_JOY_RIGHT_DEFAULT, JOY_RIGHT, "", TEXT_MENU_JOY_RIGHT})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_A", KEY_JOY_A_DEFAULT, JOY_A, "", TEXT_MENU_JOY_A})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_B", KEY_JOY_B_DEFAULT, JOY_B, "", TEXT_MENU_JOY_B})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_X", KEY_JOY_X_DEFAULT, JOY_X, "", TEXT_MENU_JOY_X})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_Y", KEY_JOY_Y_DEFAULT, JOY_Y, "", TEXT_MENU_JOY_Y})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_LT", KEY_JOY_LT_DEFAULT, JOY_LT, "", TEXT_MENU_JOY_LT})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_RT", KEY_JOY_RT_DEFAULT, JOY_RT, "", TEXT_MENU_JOY_RT})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_LB", KEY_JOY_LB_DEFAULT, JOY_LB, "", TEXT_MENU_JOY_LB})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_RB", KEY_JOY_RB_DEFAULT, JOY_RB, "", TEXT_MENU_JOY_RB})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_SELECT", KEY_JOY_SELECT_DEFAULT, JOY_SELECT, "", TEXT_MENU_JOY_SELECT})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_START", KEY_JOY_START_DEFAULT, JOY_START, "", TEXT_MENU_JOY_START})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_MENU1", KEY_JOY_MENU1_DEFAULT, JOY_MENU1, "", TEXT_MENU_JOY_MENU1})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_MENU2", KEY_JOY_MENU2_DEFAULT, JOY_MENU2, "", TEXT_MENU_JOY_MENU2})->setFlags(INPUT);
+    joy_grp.addOption({"JOY_AXIS_LX", KEY_JOY_AXIS_LX, JOY_AXIS_LX, "", TEXT_MENU_JOY_AXIS_LX})->setFlags(INPUT | HIDDEN);
+    joy_grp.addOption({"JOY_AXIS_LY", KEY_JOY_AXIS_LY, JOY_AXIS_LY, "", TEXT_MENU_JOY_AXIS_LY})->setFlags(INPUT | HIDDEN);
+    joy_grp.addOption({"JOY_AXIS_RX", KEY_JOY_AXIS_RX, JOY_AXIS_RX, "", TEXT_MENU_JOY_AXIS_RX})->setFlags(INPUT | HIDDEN);
+    joy_grp.addOption({"JOY_AXIS_RY", KEY_JOY_AXIS_RY, JOY_AXIS_RY, "", TEXT_MENU_JOY_AXIS_RY})->setFlags(INPUT | HIDDEN);
     joy_grp.addOption({
         "JOY_DEADZONE", {
             "2000", "4000", "6000", "8000", "10000", "12000", "14000", "16000",
             "18000", "20000", "22000", "24000", "26000", "28000", "30000"
         },
-        3, JOY_DEADZONE
+        3, JOY_DEADZONE, "", TEXT_MENU_JOY_DEADZONE
     });
     addGroup(joy_grp);
 #ifndef NO_KEYBOARD
-    Group kb_grp("KEYBOARD", KEYBOARD);
-    kb_grp.addOption({"KEY_UP", KEY_KB_UP_DEFAULT, KEY_UP})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_DOWN", KEY_KB_DOWN_DEFAULT, KEY_DOWN})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_LEFT", KEY_KB_LEFT_DEFAULT, KEY_LEFT})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_RIGHT", KEY_KB_RIGHT_DEFAULT, KEY_RIGHT})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_A", KEY_KB_A_DEFAULT, KEY_A})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_B", KEY_KB_B_DEFAULT, KEY_B})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_X", KEY_KB_X_DEFAULT, KEY_X})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_Y", KEY_KB_Y_DEFAULT, KEY_Y})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_LT", KEY_KB_LT_DEFAULT, KEY_LT})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_RT", KEY_KB_RT_DEFAULT, KEY_RT})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_LB", KEY_KB_LB_DEFAULT, KEY_LB})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_RB", KEY_KB_RB_DEFAULT, KEY_RB})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_SELECT", KEY_KB_SELECT_DEFAULT, KEY_SELECT})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_START", KEY_KB_START_DEFAULT, KEY_START})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_MENU1", KEY_KB_MENU1_DEFAULT, KEY_MENU1})->setFlags(INPUT);
-    kb_grp.addOption({"KEY_MENU2", KEY_KB_MENU2_DEFAULT, KEY_MENU2})->setFlags(INPUT);
+    Group kb_grp("KEYBOARD", KEYBOARD, TEXT_MENU_KEYBOARD);
+    kb_grp.addOption({"KEY_UP", KEY_KB_UP_DEFAULT, KEY_UP, "", TEXT_MENU_KEY_UP})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_DOWN", KEY_KB_DOWN_DEFAULT, KEY_DOWN, "", TEXT_MENU_KEY_DOWN})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_LEFT", KEY_KB_LEFT_DEFAULT, KEY_LEFT, "", TEXT_MENU_KEY_LEFT})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_RIGHT", KEY_KB_RIGHT_DEFAULT, KEY_RIGHT, "", TEXT_MENU_KEY_RIGHT})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_A", KEY_KB_A_DEFAULT, KEY_A, "", TEXT_MENU_KEY_A})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_B", KEY_KB_B_DEFAULT, KEY_B, "", TEXT_MENU_KEY_B})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_X", KEY_KB_X_DEFAULT, KEY_X, "", TEXT_MENU_KEY_X})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_Y", KEY_KB_Y_DEFAULT, KEY_Y, "", TEXT_MENU_KEY_Y})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_LT", KEY_KB_LT_DEFAULT, KEY_LT, "", TEXT_MENU_KEY_LT})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_RT", KEY_KB_RT_DEFAULT, KEY_RT, "", TEXT_MENU_KEY_RT})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_LB", KEY_KB_LB_DEFAULT, KEY_LB, "", TEXT_MENU_KEY_LB})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_RB", KEY_KB_RB_DEFAULT, KEY_RB, "", TEXT_MENU_KEY_RB})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_SELECT", KEY_KB_SELECT_DEFAULT, KEY_SELECT, "", TEXT_MENU_KEY_SELECT})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_START", KEY_KB_START_DEFAULT, KEY_START, "", TEXT_MENU_KEY_START})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_MENU1", KEY_KB_MENU1_DEFAULT, KEY_MENU1, "", TEXT_MENU_KEY_MENU1})->setFlags(INPUT);
+    kb_grp.addOption({"KEY_MENU2", KEY_KB_MENU2_DEFAULT, KEY_MENU2, "", TEXT_MENU_KEY_MENU2})->setFlags(INPUT);
     addGroup(kb_grp);
 #endif
 }

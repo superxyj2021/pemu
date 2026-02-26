@@ -35,6 +35,8 @@
 #include "ui_main.h"
 #include "ui_help.h"
 
+#include "ui_text_def.h"
+
 using namespace c2d;
 using namespace pemu;
 using namespace ss_api;
