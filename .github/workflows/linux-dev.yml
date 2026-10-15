@@ -6,15 +6,12 @@ on:
   workflow_dispatch:
 
 jobs:
-
   build-linux-dev:
-    runs-on: ubuntu-22.04
-
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-
       - name: Install build dependencies
         run: |
           sudo apt -yq update

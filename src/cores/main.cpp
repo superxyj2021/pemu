@@ -17,7 +17,20 @@ int main(int argc, char **argv) {
     const auto io = new PEMUIo();
 
     // create main ui/renderer
+    // NOTE: size must stay {0, 0} on non-switch platforms (PS4, PS5, Vita, Linux, Windows...).
+    // libcross2d's SDL2Renderer only sets SDL_WINDOW_FULLSCREEN_DESKTOP when the requested
+    // size is <= 0 (see SDL2Renderer::SDL2Renderer in libcross2d/source/platforms/sdl2/sdl2_renderer.cpp).
+    // Passing a fixed size like {1280, 720} here creates a small, non-fullscreen SDL window,
+    // which on PS4 (no windowing system / no desktop compositor) never actually gets
+    // presented to the TV output -> black screen, even though audio keeps working fine
+    // since it's an independent subsystem. Switch ignores this parameter entirely and
+    // forces its own {1280, 720} internally (see UiMain's __SWITCH__ constructor), so it's
+    // safe to leave this at {0, 0} for every platform.
+#if defined(__LINUX__) || defined(__WINDOWS__) || defined(__SWITCH__)
     pemu_ui = new PEMUUiMain(Vector2f{1280, 720});
+#else
+    pemu_ui = new PEMUUiMain(Vector2f{0, 0});
+#endif
     pemu_ui->setIo(io);
 
     // load configuration
@@ -77,7 +90,8 @@ int main(int argc, char **argv) {
 
 #ifdef  __PS4__
     sceSystemServiceLoadExec((char *) "exit", nullptr);
-    while (true) {}
+    while (true) {
+    }
 #endif
 
     return 0;

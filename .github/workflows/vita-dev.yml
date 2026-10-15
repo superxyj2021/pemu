@@ -6,15 +6,12 @@ on:
   workflow_dispatch:
 
 jobs:
-
   build-vita-dev:
-    runs-on: ubuntu-24.04
-
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-
       - name: Install build dependencies
         run: |
           sudo apt -yq update
@@ -22,12 +19,11 @@ jobs:
 
       - name: Install vita toolchain
         run: |
-          git clone https://github.com/vitasdk/vdpm
-          cd vdpm
-          ./bootstrap-vitasdk.sh
           export VITASDK=/usr/local/vitasdk
           export PATH=$VITASDK/bin:$PATH
-          ./install-all.sh
+          wget -q https://github.com/vitasdk/autobuilds/releases/download/master-linux-v2.540/vitasdk-x86_64-linux-gnu-2026-05-24_12-05-02.tar.bz2
+          sudo tar -xjf vitasdk-x86_64-linux-gnu-2026-05-24_12-05-02.tar.bz2 -C /usr/local/
+          vdpm libvita2d freetype bzip2 libpng libconfig zlib sdl2 curl openssl tinyxml2 libarchive minizip zstd xz
 
       - name: Configure
         run: |
@@ -41,24 +37,24 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/cmake-build
           make pfbneo.deps
-          make -j"$(nproc)" pfbneo.vpk
+          make pfbneo.vpk
 
       - name: Build pgen
         run: |
           cd $GITHUB_WORKSPACE/cmake-build
-          make -j"$(nproc)" pgen.vpk
+          make pgen.vpk
 
       - name: Build pnes
         run: |
           cd $GITHUB_WORKSPACE/cmake-build
-          make -j"$(nproc)" pnes.vpk
+          make pnes.vpk
 
       - name: Build psnes
         run: |
           cd $GITHUB_WORKSPACE/cmake-build
-          make -j"$(nproc)" psnes.vpk
+          make psnes.vpk
 
       - name: Build pgba
         run: |
           cd $GITHUB_WORKSPACE/cmake-build
-          make -j"$(nproc)" pgba.vpk
+          make pgba.vpk
