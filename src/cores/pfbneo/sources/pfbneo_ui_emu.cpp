@@ -11,12 +11,6 @@
 #include "pfbneo_utility.h"
 #include "retro_input_wrapper.h"
 
-//#define DR_FLAC_IMPLEMENTATION
-//#include "dr_flac.h"
-//#define DR_WAV_IMPLEMENTATION
-//#include "dr_wav.h"
-
-
 using namespace c2d;
 using namespace pemu;
 
