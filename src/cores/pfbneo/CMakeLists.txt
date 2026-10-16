@@ -20,11 +20,18 @@ set(BURN_DIRS
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/devices
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/snd
+		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/libs/libchdr
+		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/libs/libchdr/include
+		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/libs/lzma
 )
 file(GLOB SRC_BURN
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/*.c*
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/devices/*.c*
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/snd/*.c*
+		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/libs/libchdr/*.c*
+		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/libs/lzma/*.c*
+)
+list(REMOVE_ITEM SRC_BURN
 )
 ##############
 # burner
@@ -75,6 +82,7 @@ set(DRV_DIRS
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/pre90s
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/neogeo
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/pgm
+		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/pgm2
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/psikyo
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/sega
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/taito
@@ -85,13 +93,17 @@ if (NOT OPTION_LIGHT)
     list(APPEND DRV_DIRS
             ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/channelf
             ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/coleco
+			${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/gba
             ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/megadrive
             ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/pce
             ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/nes
             ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/sg1000
             ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/sms
+			${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/snes
             ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/msx
             ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/spectrum
+			${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/libs/dr_libs
+			${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/libs/stb_vorbis
     )
 endif ()
 
@@ -99,6 +111,10 @@ foreach (DIR ${DRV_DIRS})
     file(GLOB DRV ${DIR}/*.cpp)
     list(APPEND SRC_DRV ${DRV})
 endforeach ()
+
+list(APPEND SRC_DRV 
+		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/snes/msu1_decoders.c
+)
 
 list(REMOVE_ITEM SRC_DRV
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/capcom/ctv_make.cpp
@@ -135,14 +151,17 @@ set(CPU_DIRS
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/adsp2100
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/arm
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/arm7
+		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/arm9
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/e132xs
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/f8
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/h6280
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/hd6309
+		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/hmcs40
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/i8x41
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/i386
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/i8039
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/i8051
+		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/i8085
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/konami
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/m68k
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/m377
@@ -150,12 +169,14 @@ set(CPU_DIRS
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/m6800
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/m6805
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/m6809
+		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/mb88xx
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/mips3
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/nec
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/pic16c5x
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/s2650
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/sh2
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/sh4
+		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/t11
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/tlcs90
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/tlcs900
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/tms34
@@ -164,6 +185,7 @@ set(CPU_DIRS
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/upd7725
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/upd7810
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/v60
+		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/xa
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/z80
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/z180
 )
@@ -176,6 +198,8 @@ list(REMOVE_ITEM SRC_CPU
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/tms34010/tms34010_newdasm.cpp
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/tms34010/tms34010_dasm.cpp
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/mips3/x64/mips3_x64.cpp
+		# hmcs40op.cpp是hmcs40.cpp的内联实现文件，不需要单独编译
+		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/hmcs40/hmcs40op.cpp
 )
 
 if (OPTION_LIGHT)
@@ -265,6 +289,8 @@ set(FLAGS
         -DLSB_FIRST
         -DINCLUDE_7Z_SUPPORT -DMINIZIP_LIB
         -DBUILD_SDL2 -DBUILD_M68K
+		# 使用系统zlib
+		-DCHDR_SYSTEM_ZLIB
         #-fomit-frame-pointer
         -Wno-strict-aliasing -Wno-long-long
         -Wno-write-strings -Wno-sign-compare -Wno-uninitialized -Wno-unused
@@ -336,6 +362,8 @@ elseif (PLATFORM_SWITCH)
     # NX (SWITCH)
     ##############
     list(APPEND FLAGS -DUSE_FILE32API -ffunction-sections -fomit-frame-pointer)
+	# 链接系统 zlib
+	list(APPEND LDFLAGS -lz)
 elseif (PLATFORM_LINUX)
     ##############
     # LINUX

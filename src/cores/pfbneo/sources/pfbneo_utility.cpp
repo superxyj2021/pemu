@@ -36,6 +36,10 @@ int PFBNEOUtility::setDriverActive(const Game &game) {
         zipName = "chf_" + zipName;
     } else if (game.system.id == HARDWARE_PREFIX_NGP) {
         zipName = "ngp_" + zipName;
+    } else if (game.system.id == HARDWARE_PREFIX_SNES) {
+        zipName = "snes_" + zipName;
+    } else if (game.system.id == HARDWARE_PREFIX_GBA) {
+        zipName = "gba_" + zipName;
     }
 
     for (unsigned int i = 0; i < nBurnDrvCount + 1; i++) {
@@ -97,7 +101,10 @@ PFBNEOUtility::GameInfo PFBNEOUtility::getGameInfo(const Game &game) {
                 case HARDWARE_PREFIX_IGS_PGM:
                     gameInfo.sysName = "PGM (IGS)";
                     break;
-                case HARDWARE_PREFIX_MISC_POST90S:
+                case HARDWARE_PREFIX_IGS_PGM2:
+                    gameInfo.sysName = "PGM2 (IGS)";
+                    break;
+				case HARDWARE_PREFIX_MISC_POST90S:
                     gameInfo.sysName = TEXT_ROM_SYSTEM_POST_90S;
                     break;
                 case HARDWARE_PREFIX_TAITO:

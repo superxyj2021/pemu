@@ -11,6 +11,12 @@
 #include "pfbneo_utility.h"
 #include "retro_input_wrapper.h"
 
+//#define DR_FLAC_IMPLEMENTATION
+//#include "dr_flac.h"
+//#define DR_WAV_IMPLEMENTATION
+//#include "dr_wav.h"
+
+
 using namespace c2d;
 using namespace pemu;
 
@@ -206,6 +212,12 @@ void Reinitialise(void) {
     uiInstance->getUiEmu()->addVideo(v);
     printf("PFBAUiEmu::Reinitialise: size: %i x %i, aspect: %i x %i\n",
            size.x, size.y, aspect.x, aspect.y);
+}
+
+// need for some games
+void ReinitialiseVideo()
+{
+	Reinitialise();
 }
 
 void PFBAUiEmu::stop() {

@@ -83,6 +83,8 @@ PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(rende
                            {HARDWARE_PREFIX_SEGA_MASTER_SYSTEM, 0, "Sega Master System"});
     addRomPath("SPECTRUM", io->getDataPath() + "spectrum/", {HARDWARE_PREFIX_SPECTRUM, 0, "ZX Spectrum"});
     addRomPath("TG16", io->getDataPath() + "tg16/", {HARDWARE_PCENGINE_TG16, 0, "PC Engine TG16"});
+    addRomPath("SNES", io->getDataPath() + "snes/", {HARDWARE_PREFIX_SNES, 0, "SNES"});
+    addRomPath("GBA", io->getDataPath() + "gba/", {HARDWARE_PREFIX_GBA, 0, "GBA"});	
 #endif
 
     // save newly added roms paths

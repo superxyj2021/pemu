@@ -28,6 +28,7 @@ char szAppSamplesPath[MAX_PATH];
 char szAppBlendPath[MAX_PATH];
 char szAppEEPROMPath[MAX_PATH];
 char szAppHDDPath[MAX_PATH];
+char szAppSnesMsu1Path[MAX_PATH];
 
 void BurnPathsInit(c2d::C2DIo *io) {
     printf("BurnPathsInit: dataPath = %s\n", io->getDataPath().c_str());
@@ -61,6 +62,10 @@ void BurnPathsInit(c2d::C2DIo *io) {
     snprintf(szAppHDDPath, MAX_PATH - 1, "%s%s/", szAppHomePath, "hdd");
     io->create(szAppHDDPath);
     //printf("szAppHDDPath: %s\n", szAppHDDPath);
+	
+    snprintf(szAppSnesMsu1Path, MAX_PATH - 1, "%s%s/", szAppHomePath, "snesmsu1");
+    io->create(szAppSnesMsu1Path);
+    //printf("szAppSnesMsu1Path: %s\n", szAppSnesMsu1Path);	
 
     snprintf(szAppEEPROMPath, MAX_PATH - 1, "%s%s/", szAppHomePath, "eeproms");
     io->create(szAppEEPROMPath);
