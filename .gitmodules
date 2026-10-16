@@ -6,10 +6,10 @@
 	url = https://github.com/Cpasjuste/nestopia.git
 [submodule "sscrap"]
 	path = external/sscrap
-	url = https://github.com/Cpasjuste/sscrap.git
+	url = https://github.com/superxyj2021/sscrap.git
 [submodule "libcross2d"]
 	path = external/libcross2d
-	url = https://github.com/Cpasjuste/libcross2d.git
+	url = https://github.com/superxyj2021/libcross2d.git
 [submodule "cores/fbneo"]
 	path = external/cores/FBNeo
 	url = https://github.com/finalburnneo/FBNeo.git
