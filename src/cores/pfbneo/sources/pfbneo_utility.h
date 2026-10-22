@@ -18,6 +18,8 @@ public:
         std::string sysName;
         int sysId;
         int players;
+		int genre;
+		std::string date;
     };
 
     static int setDriverActive(const Game &game);

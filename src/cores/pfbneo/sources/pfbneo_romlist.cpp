@@ -5,6 +5,7 @@
 #include "skeleton/pemu.h"
 #include "pfbneo_romlist.h"
 #include "pfbneo_utility.h"
+#include "burner.h"
 
 using namespace c2d;
 using namespace pemu;
@@ -21,10 +22,8 @@ void PFBNRomList::build(const ss_api::GameList::GameAddedCb &cb) {
                game->path.c_str(), game->romsPath.c_str(),
                gameInfo.system.c_str(), gameInfo.systemId, cfgSys.name.c_str(), cfgSys.id);
 #endif
-        // replace gamelist.xml name with fbneo name
-        if (!gameInfo.name.empty()) {
-            game->name = gameInfo.name;
-        }
+        // replace gamename
+        game->name = gameInfo.name;
 
         // replace editor/developer
         if ((game->editor.name.empty() || game->editor.name == "UNKNOWN")
@@ -37,12 +36,12 @@ void PFBNRomList::build(const ss_api::GameList::GameAddedCb &cb) {
             game->developer.id = game->editor.id;
         }
         if (!gameInfo.manufacturer.empty() && gameInfo.manufacturer != "<unknown>") {
-            if (game->editor.name.empty() || game->editor.name == "UNKNOWN") {
+            //if (game->editor.name.empty() || game->editor.name == "UNKNOWN") {
                 game->editor.name = gameInfo.manufacturer;
-            }
-            if (game->developer.name.empty() || game->developer.name == "UNKNOWN") {
+            //}
+            //if (game->developer.name.empty() || game->developer.name == "UNKNOWN") {
                 game->developer.name = gameInfo.manufacturer;
-            }
+            //}
         }
 
         // replace system for arcade roms
@@ -62,8 +61,101 @@ void PFBNRomList::build(const ss_api::GameList::GameAddedCb &cb) {
         if (!gameInfo.parent.empty()) {
             game->cloneOf = gameInfo.parent + ".zip";
         }
-    });
+		
+        // replace players
+        game->playersInt = gameInfo.players;
+		if (game->playersInt > 1)
+			game->players = "1-" + std::to_string(game->playersInt);
+		else
+			game->players = std::to_string(game->playersInt);
+		
+        // replace date
+        if (!gameInfo.date.empty()) {
+            game->date = gameInfo.date;
+        }	
+		
+        // replace genre
+		game->genre.id = gameInfo.genre;
+		game->genre.name.clear();
 
+		// 辅助 lambda：命中则追加名称，用 " / " 分隔, 避免有些游戏有多个类型标签而变为unknown
+		auto appendGenre = [&game, &gameInfo](int flag, const char* name) {
+			if (gameInfo.genre & flag) {
+				if (!game->genre.name.empty()) {
+					game->genre.name += " / ";
+				}
+				game->genre.name += name;
+			}
+		};
+
+		appendGenre(GBF_HORSHOOT,      TEXT_GBF_HORSHOOT);
+		appendGenre(GBF_VERSHOOT,      TEXT_GBF_VERSHOOT);
+		appendGenre(GBF_SCRFIGHT,      TEXT_GBF_SCRFIGHT);
+		appendGenre(GBF_VSFIGHT,       TEXT_GBF_VSFIGHT);
+		appendGenre(GBF_BIOS,          TEXT_GBF_BIOS);
+		appendGenre(GBF_BREAKOUT,      TEXT_GBF_BREAKOUT);
+		appendGenre(GBF_CASINO,        TEXT_GBF_CASINO);
+		appendGenre(GBF_BALLPADDLE,    TEXT_GBF_BALLPADDLE);
+		appendGenre(GBF_MAZE,          TEXT_GBF_MAZE);
+		appendGenre(GBF_MINIGAMES,     TEXT_GBF_MINIGAMES);
+		appendGenre(GBF_PINBALL,       TEXT_GBF_PINBALL);
+		appendGenre(GBF_PLATFORM,      TEXT_GBF_PLATFORM);
+		appendGenre(GBF_PUZZLE,        TEXT_GBF_PUZZLE);
+		appendGenre(GBF_QUIZ,          TEXT_GBF_QUIZ);
+		appendGenre(GBF_SPORTSMISC,    TEXT_GBF_SPORTSMISC);
+		appendGenre(GBF_SPORTSFOOTBALL,TEXT_GBF_SPORTSFOOTBALL);
+		appendGenre(GBF_MISC,          TEXT_GBF_MISC);
+		appendGenre(GBF_MAHJONG,       TEXT_GBF_MAHJONG);
+		appendGenre(GBF_RACING,        TEXT_GBF_RACING);
+		appendGenre(GBF_SHOOT,         TEXT_GBF_SHOOT);
+		appendGenre(GBF_MULTISHOOT,    TEXT_GBF_MULTISHOOT);
+		appendGenre(GBF_ACTION,        TEXT_GBF_ACTION);
+		appendGenre(GBF_RUNGUN,        TEXT_GBF_RUNGUN);
+		appendGenre(GBF_STRATEGY,      TEXT_GBF_STRATEGY);
+		appendGenre(GBF_VECTOR,        TEXT_GBF_VECTOR);
+		appendGenre(GBF_RPG,           TEXT_GBF_RPG);
+		appendGenre(GBF_SIM,           TEXT_GBF_SIM);
+		appendGenre(GBF_ADV,           TEXT_GBF_ADV);
+		appendGenre(GBF_CARD,          TEXT_GBF_CARD);
+		appendGenre(GBF_BOARD,         TEXT_GBF_BOARD);
+
+		// 没有任何分类命中时，回退到 unknown
+		if (game->genre.name.empty()) {
+			game->genre.name = TEXT_UNKNOWN;
+		}
+
+		// 检查媒体文件信息是否填充，如果没有，强制写一个对应文件名的值当作默认值。
+		// 检查是否已存在 type 为 "video" 的媒体
+		std::string zipName = c2d::Utility::removeExt(game->path);
+		
+		auto& m_list = game->medias;
+
+		if (m_list.empty()) {
+			game->medias.push_back({"./media/images/" + zipName + ".png", "mixrbv2", "png"});
+			game->medias.push_back({"./media/videos/" + zipName + ".mp4", "video", "mp4"});
+		} else {
+			auto hasVideo = std::find_if(
+				m_list.begin(),
+				m_list.end(),
+				[](const ss_api::Game::Media& m) { return m.type == "video"; }
+			) != m_list.end();
+
+			auto hasImage = std::find_if(
+				m_list.begin(),
+				m_list.end(),
+				[](const ss_api::Game::Media& m) { return m.type == "mixrbv2"; }
+			) != m_list.end();
+
+			if (!hasVideo) {
+				game->medias.push_back({"./media/videos/" + zipName + ".mp4", "video", "mp4"});
+			}
+
+			if (!hasImage) {
+				game->medias.push_back({"./media/images/" + zipName + ".png", "mixrbv2", "png"});
+			}
+		}
+    });
+	
     printf("PFBNRomList::build: removing HARDWARE_PREFIX_ARCADE...\n");
     // remove custom "ARCADE" system added from "RomList::build"
     gameList->systemList.remove(HARDWARE_PREFIX_ARCADE);

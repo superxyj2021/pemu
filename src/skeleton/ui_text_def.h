@@ -169,6 +169,36 @@
 
 #define TEXT_MSG_ERROR_LOADING                          "Error loading %s for %s.\nEmulation will likely have problems."
 
+#define TEXT_GBF_HORSHOOT								"Horizontal Shooter"	
+#define TEXT_GBF_VERSHOOT								"Vertical Shooter"	
+#define TEXT_GBF_SCRFIGHT								"Screen / Scrolling Fight"	
+#define TEXT_GBF_VSFIGHT								"Versus Fight"	
+#define TEXT_GBF_BIOS									"BIOS"	
+#define TEXT_GBF_BREAKOUT								"Breakout"	
+#define TEXT_GBF_CASINO									"Casino"	
+#define TEXT_GBF_BALLPADDLE								"Ball & Paddle"	
+#define TEXT_GBF_MAZE									"Maze"
+#define TEXT_GBF_MINIGAMES								"Minigames"
+#define TEXT_GBF_PINBALL								"Pinball"
+#define TEXT_GBF_PLATFORM								"Platform"
+#define TEXT_GBF_PUZZLE									"Puzzle"
+#define TEXT_GBF_QUIZ									"Quiz"
+#define TEXT_GBF_SPORTSMISC								"Sports Misc"
+#define TEXT_GBF_SPORTSFOOTBALL							"Sports Football"
+#define TEXT_GBF_MISC									"Miscellaneous"
+#define TEXT_GBF_MAHJONG								"Mahjong"
+#define TEXT_GBF_RACING									"Racing"
+#define TEXT_GBF_SHOOT									"Shooter"
+#define TEXT_GBF_MULTISHOOT								"Multi Shooter"
+#define TEXT_GBF_ACTION  								"Action"
+#define TEXT_GBF_RUNGUN  								"Run and Gun"
+#define TEXT_GBF_STRATEGY								"Strategy"
+#define TEXT_GBF_VECTOR                                 "Vector" 
+#define TEXT_GBF_RPG                                    "Role-Playing Game" 
+#define TEXT_GBF_SIM                                    "Simulation" 
+#define TEXT_GBF_ADV                                    "Adventure" 
+#define TEXT_GBF_CARD                                   "Card" 
+#define TEXT_GBF_BOARD                                  "Board" 
 
 
 
@@ -365,6 +395,40 @@
 
 
 #define TEXT_MSG_ERROR_LOADING                          "加载ROM %s (驱动:%s) 出错\n模拟可能会有问题"
+
+
+
+//游戏类型
+#define TEXT_GBF_HORSHOOT								"横向射击"	
+#define TEXT_GBF_VERSHOOT								"纵向射击"	
+#define TEXT_GBF_SCRFIGHT								"清版格斗"	
+#define TEXT_GBF_VSFIGHT								"对战格斗"	
+#define TEXT_GBF_BIOS									"BIOS"	
+#define TEXT_GBF_BREAKOUT								"打砖块"	
+#define TEXT_GBF_CASINO									"赌场博彩"	
+#define TEXT_GBF_BALLPADDLE								"球拍挡板"	
+#define TEXT_GBF_MAZE									"迷宫"
+#define TEXT_GBF_MINIGAMES								"小游戏合集"
+#define TEXT_GBF_PINBALL								"弹珠台"
+#define TEXT_GBF_PLATFORM								"平台跳跃"
+#define TEXT_GBF_PUZZLE									"益智解谜"
+#define TEXT_GBF_QUIZ									"问答"
+#define TEXT_GBF_SPORTSMISC								"体育杂项"
+#define TEXT_GBF_SPORTSFOOTBALL							"足球体育"
+#define TEXT_GBF_MISC									"其他杂项"
+#define TEXT_GBF_MAHJONG								"麻将"
+#define TEXT_GBF_RACING									"赛车竞速"
+#define TEXT_GBF_SHOOT									"射击"
+#define TEXT_GBF_MULTISHOOT								"多方向射击"
+#define TEXT_GBF_ACTION  								"动作"
+#define TEXT_GBF_RUNGUN  								"跑轰射击"
+#define TEXT_GBF_STRATEGY								"策略"
+#define TEXT_GBF_VECTOR                                 "矢量图形游戏"
+#define TEXT_GBF_RPG                                    "角色扮演"
+#define TEXT_GBF_SIM                                    "模拟" 
+#define TEXT_GBF_ADV                                    "冒险" 
+#define TEXT_GBF_CARD                                   "卡牌" 
+#define TEXT_GBF_BOARD                                  "桌游棋类" 
 
 
 #endif

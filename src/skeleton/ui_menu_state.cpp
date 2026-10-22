@@ -15,7 +15,8 @@ public:
         UiState::setPosition(x, UiState::getPosition().y);
         outlineColor = UiState::getOutlineColor();
         outlineTickness = UiState::getOutlineThickness();
-        outlineColorSelected = ui->getSkin()->getRectangleShape({"STATES_MENU"}).outlineColor;
+        outlineColorSelected = ui->getSkin()->getRectangleShape({"SKIN_CONFIG", "HIGHLIGHT"}).outlineColor;
+		//outlineColorSelected = ui->getSkin()->getRectangleShape({"STATES_MENU"}).outlineColor;
 
         // text if no save/screenshot
         middle_text = new C2DText(TEXT_NO_SAVE, 26, ui->getSkin()->getFont());

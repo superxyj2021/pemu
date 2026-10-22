@@ -122,6 +122,15 @@ Skin::Skin(UiMain *u) {
     config::Group romSyno = createRectangleShapeGroup("ROM_SYNOPSIS");
     romSyno.addGroup(createTextGroup("TEXT"));
     main.addGroup(romSyno);
+	//newstyle
+	config::Group line1 = createRectangleShapeGroup("LINE1");
+    main.addGroup(line1);
+	config::Group line2 = createRectangleShapeGroup("LINE2");
+    main.addGroup(line2);
+	config::Group line3 = createRectangleShapeGroup("LINE3");
+    main.addGroup(line3);
+	config::Group romimagerect = createRectangleShapeGroup("ROM_IMAGE_RECT");
+    main.addGroup(romimagerect);	
     //
     config::Group romInfo = createRectangleShapeGroup("ROM_INFOS");
     romInfo.addGroup(createTextGroup("SYSTEM_TEXT"));
