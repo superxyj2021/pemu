@@ -4,6 +4,7 @@
 
 #include "pemu.h"
 #include "ui_menu.h"
+#include "buffer.h"
 
 using namespace c2d::config;
 
@@ -53,8 +54,8 @@ public:
 
         // this is a menu title (or custom option)
         if (!option) {
-            // custom options
-            if (name == TEXT_STATES || name == TEXT_QUIT) {
+            // custom options, // === 新增: "打赏作者" 菜单项显示"执行" ===
+            if (name == TEXT_STATES || name == TEXT_QUIT || name == TEXT_MONEY2) {
                 p_value->setVisibility(Visibility::Visible);
                 p_value->setString(TEXT_GO);
                 return;
@@ -143,6 +144,15 @@ UiMenu::UiMenu(UiMain *uiMain) : SkinnedRectangle(uiMain, {"OPTIONS_MENU"}) {
     tweenPosition->setState(TweenState::Stopped);
     UiMenu::add(tweenPosition);
 
+	// add blur
+	pBlur = new RectangleShape({UiMenu::getLocalBounds().width, UiMenu::getLocalBounds().height+200});
+	pBlur->setFillColor(Color::Gray);
+	pBlur->add(new TweenAlpha(0, 230, 0.2));
+	pBlur->setPosition(getSize().x / 2, getSize().y / 2);
+	pBlur->setOrigin(Origin::Center);	
+	pBlur->setVisibility(Visibility::Hidden);
+	UiMenu::add(pBlur);		
+
     // hide by default
     UiMenu::setVisibility(Visibility::Hidden);
 }
@@ -163,6 +173,10 @@ void UiMenu::load(bool isGame) {
     // set options items
     optionIndex = highlightIndex = 0;
     menu_options.clear();
+    // === 新增: 在菜单第一行添加"打赏"和"打赏作者"菜单项 ===
+    menu_options.insert(menu_options.begin(), {TEXT_MONEY, nullptr});
+    menu_options.insert(menu_options.begin() + 1, {TEXT_MONEY2, nullptr});
+    // ======================================================	
     auto groups = ui->getConfig()->getGroups();
     for (auto &group: *groups) {
         // skip some options if needed
@@ -238,7 +252,7 @@ void UiMenu::onKeyUp() {
 
     // skip menus
     auto opt = menu_options.at(optionIndex + highlightIndex);
-    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT) {
+    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2) {
         return onKeyUp();
     }
 
@@ -262,7 +276,7 @@ void UiMenu::onKeyDown() {
 
     // skip menus
     auto opt = menu_options.at(optionIndex + highlightIndex);
-    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT) {
+    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2) {
         return onKeyDown();
     }
 
@@ -413,21 +427,39 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
                 ui->done = true;
             }
         }
+        // === 新增: "打赏作者"菜单项被选中时显示打赏图片 ===
+        else if (lines.at(highlightIndex)->p_name->getString() == TEXT_MONEY2 && !m_showingDonate) 
+		{
+            showDonateImage();
+        }
+        // ======================================================
     }
 
     // FIRE2 (BACK)
-    if (buttons & Input::Button::Menu1 || buttons & Input::Button::Menu2 || buttons & Input::Button::B) {
-        setVisibility(Visibility::Hidden, true);
-        if (isEmuRunning) {
-            ui->getUiEmu()->resume();
-        }
+    if (buttons & Input::Button::Menu1 || buttons & Input::Button::Menu2 || buttons & Input::Button::B) 
+	{
+		//判断下是否开着打赏图片
+		if (m_showingDonate) 
+			hideDonateImage();
+		else
+		{
+			setVisibility(Visibility::Hidden, true);
+			if (isEmuRunning) {
+				ui->getUiEmu()->resume();
+			}
+		}
     }
 
     return true;
 }
 
 void UiMenu::setVisibility(Visibility visibility, bool tweenPlay) {
-    if (ui->getUiRomList() && ui->getUiRomList()->isVisible()) {
+        // === 新增: 菜单隐藏时关闭打赏图片 ===
+    if (visibility == Visibility::Hidden) {
+        hideDonateImage();
+    }
+	
+	if (ui->getUiRomList() && ui->getUiRomList()->isVisible()) {
         ui->getUiRomList()->getBlur()->setVisibility(visibility, true);
     }
 
@@ -438,6 +470,52 @@ void UiMenu::setVisibility(Visibility visibility, bool tweenPlay) {
     }
 
     RectangleShape::setVisibility(visibility, tweenPlay);
+}
+
+// === 新增: 显示打赏图片 ===
+void UiMenu::showDonateImage() {
+    if (m_showingDonate) 
+		return;
+	
+	if ( pDonateImage == nullptr )
+	{
+		pDonateImage = new C2DTexture(buffer_img, BUFFER_IMG_SIZE);
+
+		if (pDonateImage->available) 
+		{
+			float tex_scaling = std::min(
+					getSize().x / (float) pDonateImage->getTextureRect().width,
+					getSize().y / (float) pDonateImage->getTextureRect().height);
+			pDonateImage->setScale(tex_scaling, tex_scaling);
+			pDonateImage->setPosition(getSize().x / 2, getSize().y / 2);
+			pDonateImage->setOrigin(Origin::Center);
+			add(pDonateImage);
+			pBlur->setVisibility(Visibility::Visible, true);
+			pDonateImage->setVisibility(Visibility::Visible, true);
+		}
+	}
+	else
+	{
+		if (pDonateImage->available) 
+		{
+			pBlur->setVisibility(Visibility::Visible, true);
+			pDonateImage->setVisibility(Visibility::Visible, true);
+		}
+	}
+	
+	m_showingDonate	= true;
+}
+
+// === 新增: 隐藏打赏图片 ===
+void UiMenu::hideDonateImage() {
+    if (!m_showingDonate) 
+		return;
+
+	if ( pDonateImage != nullptr && pDonateImage->available)
+		pDonateImage->setVisibility(Visibility::Hidden, true);
+
+	pBlur->setVisibility(Visibility::Hidden, true);
+	m_showingDonate	= false;
 }
 
 UiMenu::~UiMenu() {

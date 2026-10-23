@@ -322,9 +322,9 @@
 #define TEXT_ROMINFO_CLONEOF							"克隆于: "
 #define TEXT_ROMINFO_FILENAME							"压缩包名: " 
 
-#define TEXT_ROM_SYSTEM_PRE_90S							"非主流 (90年代前)"	
-#define TEXT_ROM_SYSTEM_POST_90S						"非主流 (90年代后)"	
-#define TEXT_GAME_ALL                               	"全部机种"
+#define TEXT_ROM_SYSTEM_PRE_90S							"其他街机平台-90年前"	
+#define TEXT_ROM_SYSTEM_POST_90S						"其他街机平台-90年后"	
+#define TEXT_GAME_ALL                               	"所有平台游戏"
 
 // message
 #define TEXT_MSG_RESTART_NEEDED           				"更改该选项后，需要重新启动应用程序"
@@ -430,6 +430,9 @@
 #define TEXT_GBF_CARD                                   "卡牌" 
 #define TEXT_GBF_BOARD                                  "桌游棋类" 
 
+
+#define TEXT_MONEY										"打赏"
+#define TEXT_MONEY2										"打赏作者"
 
 #endif
 

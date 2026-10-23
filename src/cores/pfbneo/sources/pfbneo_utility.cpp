@@ -14,29 +14,6 @@
 // ---------- 全局翻译表（程序启动时加载一次） ----------
 static std::unordered_map<std::string, std::string> g_ChineseGameMap;
 
-// ---------- 从 romsPath 推导 gamelist 文件的完整路径 ----------
-static std::string BuildGameListBasePath(const std::string& romsPath)
-{
-    if (romsPath.empty())
-        return "";
-
-    std::string path = romsPath;
-
-    // 去掉末尾的斜杠
-    while (!path.empty() && (path.back() == '/' || path.back() == '\\'))
-        path.pop_back();
-
-    // 找到最后一个路径分隔符，截断到父目录
-    auto pos = path.find_last_of("/\\");
-    if (pos == std::string::npos)
-        return "";  // 没有父目录，无法推导
-
-    path = path.substr(0, pos);
-
-    // 拼接基础文件名
-    path += "/gamelist.bin";
-    return path;
-}
 
 // ---------- 从二进制 .bin 文件快速加载查找表 ----------
 // 二进制格式 (版本1):
@@ -145,21 +122,12 @@ static std::string GetChineseNameFromPath(const std::string& gamePath)
 //   gameInfo.name = (game.name == game.path) ? ... : game.name;
 // 替换为：
 //   gameInfo.name = GetGameDisplayName(game);
+//
+// 注意：调用 GetGameDisplayName 前，getGameInfo 会通过 chineseFilePath 参数
+// 自动加载中文翻译表（懒加载，仅首次调用时执行）。
 
 static std::string GetGameDisplayName(const Game& game)
 {
-	
-    // === 懒加载：第一次调用时自动加载翻译文件 ===
-    // 使用静态局部变量 (C++11 起线程安全) 保证只执行一次
-    static const bool loaded = [&game]() -> bool {
-        std::string basePath = BuildGameListBasePath(game.romsPath);
-        if (!basePath.empty())
-        {
-            return LoadChineseGameListBinary(basePath);
-        }
-        return false;
-    }();
-	
 	// 只要是rom文件名不为空就去获取
     if (!game.path.empty())
     {
@@ -203,12 +171,6 @@ static std::string GetGameDisplayName(const Game& game)
         if (!chineseName.empty())
         {
             return chineseName;  // 找到翻译，直接使用
-        }
-
-		// 其次使用xml里解析出来的数据
-        if (!game.name.empty())
-        {
-            return game.name;  // 找到翻译，直接使用
         }
 
         // 再次尝试 BurnDrvGetTextA 获取驱动中带的英文fullname
@@ -271,7 +233,15 @@ int PFBNEOUtility::setDriverActive(const Game &game) {
     return (int) nBurnDrvActive;
 }
 
-PFBNEOUtility::GameInfo PFBNEOUtility::getGameInfo(const Game &game) {
+PFBNEOUtility::GameInfo PFBNEOUtility::getGameInfo(const Game &game, const std::string& chineseFilePath) {
+    // 懒加载：第一次调用时自动加载中文翻译表
+    static bool s_chineseListLoaded = false;
+    if (!s_chineseListLoaded && !chineseFilePath.empty())
+    {
+        LoadChineseGameListBinary(chineseFilePath);
+        s_chineseListLoaded = true;
+    }
+
     auto driver = setDriverActive(game);
     GameInfo gameInfo;
 	if (driver < nBurnDrvCount) 
@@ -294,13 +264,13 @@ PFBNEOUtility::GameInfo PFBNEOUtility::getGameInfo(const Game &game) {
             gameInfo.sysName = "Neo Geo";
         } else if (prefix == HARDWARE_PREFIX_CPS2) {
             gameInfo.sysId = (int) prefix;
-            gameInfo.sysName = "CPS-2";
+            gameInfo.sysName = "Capcom Play System 2";
         } else if (prefix == HARDWARE_PREFIX_CPS3) {
             gameInfo.sysId = (int) prefix;
-            gameInfo.sysName = "CPS-3";
+            gameInfo.sysName = "Capcom Play System 3";
         } else if (prefix == HARDWARE_PREFIX_CAPCOM) {
             gameInfo.sysId = (int) prefix;
-            gameInfo.sysName = "CPS-1";
+            gameInfo.sysName = "Capcom Play System 1";
         } else {
             gameInfo.sysId = (int) prefix;
             switch (prefix) {
@@ -309,58 +279,58 @@ PFBNEOUtility::GameInfo PFBNEOUtility::getGameInfo(const Game &game) {
                     gameInfo.sysName = TEXT_ROM_SYSTEM_PRE_90S;
                     break;
                 case HARDWARE_PREFIX_SEGA:
-                    gameInfo.sysName = "SEGA (ARCADE)";
+                    gameInfo.sysName = "Sega Arcade";
                     break;
                 case HARDWARE_PREFIX_KONAMI:
-                    gameInfo.sysName = "KONAMI";
+                    gameInfo.sysName = "Konami Arcade";
                     break;
                 case HARDWARE_PREFIX_TOAPLAN:
-                    gameInfo.sysName = "TOAPLAN";
+                    gameInfo.sysName = "Toaplan Arcade";
                     break;
                 case HARDWARE_PREFIX_CAVE:
-                    gameInfo.sysName = "CAVE";
+                    gameInfo.sysName = "Cave Arcade";
                     break;
                 case HARDWARE_PREFIX_IGS_PGM:
-                    gameInfo.sysName = "PGM (IGS)";
+                    gameInfo.sysName = "PolyGame Master";
                     break;
                 case HARDWARE_PREFIX_IGS_PGM2:
-                    gameInfo.sysName = "PGM2 (IGS)";
+                    gameInfo.sysName = "PolyGame Master 2";
                     break;
 				case HARDWARE_PREFIX_MISC_POST90S:
                     gameInfo.sysName = TEXT_ROM_SYSTEM_POST_90S;
                     break;
                 case HARDWARE_PREFIX_TAITO:
-                    gameInfo.sysName = "TAITO";
+                    gameInfo.sysName = "Taito Arcade";
                     break;
                 case HARDWARE_PREFIX_PSIKYO:
-                    gameInfo.sysName = "PSIKYO";
+                    gameInfo.sysName = "Psikyo Arcade";
                     break;
                 case HARDWARE_PREFIX_KANEKO:
-                    gameInfo.sysName = "KANEKO";
+                    gameInfo.sysName = "Kaneko Arcade";
                     break;
                 case HARDWARE_PREFIX_PACMAN:
-                    gameInfo.sysName = "PACMAN";
+                    gameInfo.sysName = "Pac-Man Arcade";
                     break;
                 case HARDWARE_PREFIX_GALAXIAN:
-                    gameInfo.sysName = "GALAXIAN";
+                    gameInfo.sysName = "Galaxian Arcade";
                     break;
                 case HARDWARE_PREFIX_IREM:
-                    gameInfo.sysName = "IREM";
+                    gameInfo.sysName = "Irem Arcade";
                     break;
                 case HARDWARE_PREFIX_DATAEAST:
-                    gameInfo.sysName = "DATAEAST";
+                    gameInfo.sysName = "Data East Arcade";
                     break;
                 case HARDWARE_PREFIX_CAPCOM_MISC:
-                    gameInfo.sysName = "CAPCOM (MISC)";
+                    gameInfo.sysName = "Capcom Miscellaneous";
                     break;
                 case HARDWARE_PREFIX_SETA:
-                    gameInfo.sysName = "SETA";
+                    gameInfo.sysName = "Seta Arcade";
                     break;
                 case HARDWARE_PREFIX_TECHNOS:
-                    gameInfo.sysName = "TECHNOS";
+                    gameInfo.sysName = "Technos Arcade";
                     break;
                 case HARDWARE_PREFIX_MIDWAY:
-                    gameInfo.sysName = "MIDWAY";
+                    gameInfo.sysName = "Midway Arcade";
                     break;
                 default:
                     // consoles games

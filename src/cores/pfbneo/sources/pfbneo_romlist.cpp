@@ -12,11 +12,10 @@ using namespace pemu;
 
 void PFBNRomList::build(const ss_api::GameList::GameAddedCb &cb) {
     float time_start = ui->getElapsedTime().asSeconds();
-
     // build rom list
     RomList::build([this](Game *game) {
         auto cfgSys = game->system;
-        PFBNEOUtility::GameInfo gameInfo = PFBNEOUtility::getGameInfo(*game);
+        PFBNEOUtility::GameInfo gameInfo = PFBNEOUtility::getGameInfo(*game, ui->getIo()->getRomFsPath() + "langs/gamelist.bin");
 #if 0
         printf("game: %s, path: %s, fbneo system: %s (0x%08x), core system: %s (0x%08x)\n",
                game->path.c_str(), game->romsPath.c_str(),

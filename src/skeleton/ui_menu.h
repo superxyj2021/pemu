@@ -5,6 +5,8 @@
 #ifndef C2DUI_UI_MENU_NEW_H
 #define C2DUI_UI_MENU_NEW_H
 
+#include <memory>
+
 class MenuLine;
 
 namespace pemu {
@@ -36,6 +38,9 @@ namespace pemu {
         bool onInput(c2d::Input::Player *players) override;
 
         void setVisibility(c2d::Visibility visibility, bool tweenPlay = false) override;
+		
+		void showDonateImage();
+		void hideDonateImage();
 
     private:
         void updateLines();
@@ -58,6 +63,11 @@ namespace pemu {
         bool isRomMenu = false;
         bool isEmuRunning = false;
         bool needSave = false;
+		
+
+        c2d::Texture *pDonateImage = nullptr;
+		bool m_showingDonate = false;
+		c2d::RectangleShape *pBlur = nullptr;
     };
 }
 
