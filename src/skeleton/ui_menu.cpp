@@ -145,7 +145,7 @@ UiMenu::UiMenu(UiMain *uiMain) : SkinnedRectangle(uiMain, {"OPTIONS_MENU"}) {
     UiMenu::add(tweenPosition);
 
 	// add blur
-	pBlur = new RectangleShape({UiMenu::getLocalBounds().width, UiMenu::getLocalBounds().height+200});
+	pBlur = new RectangleShape({UiMenu::getSize().x, UiMenu::getSize().y+200});
 	pBlur->setFillColor(Color::Gray);
 	pBlur->add(new TweenAlpha(0, 230, 0.2));
 	pBlur->setPosition(getSize().x / 2, getSize().y / 2);
