@@ -172,12 +172,17 @@ static std::string GetGameDisplayName(const Game& game)
         {
             return chineseName;  // 找到翻译，直接使用
         }
-
-        // 再次尝试 BurnDrvGetTextA 获取驱动中带的英文fullname
-        const char* fullName = BurnDrvGetTextA(DRV_FULLNAME);
-        if (fullName && fullName[0] != '\0')
+		
+		// 如果是直接用的文件名，继续找驱动中的名字
+        if (game.path == game.name)
         {
-            return fullName;
+			// 再次尝试 BurnDrvGetTextA 获取驱动中带的英文fullname
+			const char* fullName = BurnDrvGetTextA(DRV_FULLNAME);
+			if (fullName && fullName[0] != '\0')
+			{
+				return fullName;
+			}
+            return game.name;  // 找到翻译，直接使用
         }
     }
 
