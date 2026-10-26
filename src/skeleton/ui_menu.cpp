@@ -436,7 +436,8 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
     }
 
     // FIRE2 (BACK)
-    if (buttons & Input::Button::Menu1 || buttons & Input::Button::Menu2 || buttons & Input::Button::B) 
+    //if (buttons & Input::Button::Menu1 || buttons & Input::Button::Menu2 || buttons & Input::Button::B) 
+	if (buttons & Input::Button::B) 
 	{
 		//判断下是否开着打赏图片
 		if (m_showingDonate) 
