@@ -57,7 +57,7 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
     p_cb = cb;
     m_count = 0;
 
-    ui->flip();
+    //ui->flip();
 
     auto romPaths = cfg->getRomPaths();
     for (const auto &p: romPaths) {
