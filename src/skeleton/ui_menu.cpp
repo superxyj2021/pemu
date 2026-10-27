@@ -182,6 +182,7 @@ void UiMenu::load(bool isGame) {
     for (auto &group: *groups) {
         // skip some options if needed
         if (group.getName() == "ROMS") continue;
+		if (group.getName() == "GAMEPAD" || group.getName() == "KEYBOARD") continue;
         if (isRomMenu && (group.getName() == "UI_OPTIONS" || group.getName() == "UI_FILTERING")) continue;
         // push group title
 		// get Chinese name

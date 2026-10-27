@@ -258,7 +258,7 @@ namespace pfbneo_turbo {
             rates.emplace_back(s_rateNames[i]);
         }
         turboGroup.addOption({
-            "TURBO_RATE", rates, s_rateDefaultIndex, TURBO_OPT_RATE, "", TEXT_MENU_TURBO_RATE
+            "TURBO_RATE", rates, s_rateDefaultIndex, TURBO_OPT_RATE, TEXT_MENU_TURBO_HINT, TEXT_MENU_TURBO_RATE
         });
 
         for (int i = 0; i < TURBO_BUTTON_COUNT; i++) {

@@ -294,6 +294,7 @@
 // pfbneo turbo (auto-fire) options
 #define TEXT_MENU_TURBO                                 "连发设置"
 #define TEXT_MENU_TURBO_RATE                            "连发速率"
+#define TEXT_MENU_TURBO_HINT  							"连发速率：4Hz最慢，30Hz最快，默认15Hz"
 #define TEXT_MENU_TURBO_A                               "连发 A"
 #define TEXT_MENU_TURBO_B                               "连发 B"
 #define TEXT_MENU_TURBO_X                               "连发 X"
@@ -457,6 +458,8 @@
 
 #define TEXT_MONEY										"打赏"
 #define TEXT_MONEY2										"打赏作者"
+
+
 
 #endif
 
