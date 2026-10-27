@@ -8,6 +8,12 @@ using namespace c2d;
 using namespace pemu;
 using namespace ss_api;
 
+// marquee scroll timing (seconds): pause before the freshly highlighted line
+// starts scrolling, and pause at each edge (head left / tail right) before the
+// direction reverses. tune these together with the speed for best readability.
+static const float SCROLL_HOLD_START = 0.5f;
+static const float SCROLL_HOLD_EDGE = 0.65f;
+
 UIListBoxLine::UIListBoxLine(
         const FloatRect &rect, const std::string &str,
         Font *font, unsigned int fontSize, const c2d::Vector2f &scaling, Texture *i, bool use_ic) : RectangleShape(
@@ -141,14 +147,24 @@ void UIListBox::init(Font *font, int fontSize) {
 void UIListBox::updateLines() {
     bool useZipName = ui->getConfig()->getOption(PEMUConfig::OptId::UI_SHOW_ZIP_NAMES)->getInteger();
 
+    // reset the marquee scroll animation when the selection/list changes
+    m_scrollOffset = 0.f;
+    m_scrollDir = 1;
+    // pause briefly before the freshly highlighted line starts scrolling
+    m_scrollHoldUntil = m_scrollClock.getElapsedTime().asSeconds() + SCROLL_HOLD_START;
+
     for (unsigned int i = 0; i < (unsigned int) max_lines; i++) {
         if (file_index + i >= games.size()) {
             lines[i]->setVisibility(Visibility::Hidden);
+            lines[i]->getText()->setScrollEnabled(false);
         } else {
             // set file
             Game game = games[file_index + i];
             lines[i]->setVisibility(Visibility::Visible);
             lines[i]->setString(useZipName ? Utility::removeExt(game.path) : game.name);
+            // marquee scroll: only the highlighted (selected) line scrolls,
+            // all other lines keep the "..." truncation
+            lines[i]->getText()->setScrollEnabled((int) i == highlight_index);
             // TODO: ICON
             //lines[i]->setIcon(file->icon);
             lines[i]->setColor(game.available ? colorAvailable : colorMissing);
@@ -173,6 +189,53 @@ void UIListBox::updateLines() {
     } else {
         if (use_highlight) {
             highlight->setVisibility(Visibility::Visible, false);
+        }
+    }
+}
+
+void UIListBox::onUpdate() {
+    // let children update first so the Text geometry (scroll width) is fresh
+    RectangleShape::onUpdate();
+
+    // marquee scroll animation for the selected line (bounce mode with pauses)
+    if (!games.empty() && highlight_index >= 0 && highlight_index < (int) lines.size()) {
+        auto *text = lines[highlight_index]->getText();
+        if (text->isScrollNeeded()) {
+            float elapsed = m_scrollClock.getElapsedTime().asSeconds();
+            float dt = std::min(elapsed - m_lastScrollTime, 0.1f);
+            m_lastScrollTime = elapsed;
+
+            // pause: no movement right after highlight, and when the head or
+            // the tail reaches an edge (looks best visually: read -> move ->
+            // pause at the end -> bounce back)
+            if (elapsed < m_scrollHoldUntil) {
+                text->setScrollOffset(m_scrollOffset);
+                return;
+            }
+
+            // slower bounce speed (px per second); tune here if needed
+            const float speed = 12.f;
+            // the text must never leave its bounds: the offset only travels
+            // between 0 (head at the left edge) and the point where the tail
+            // reaches the right edge, then it bounces back.
+            float limit = std::max(0.f, text->getScrollFullWidth() - text->getSizeMax().x);
+            m_scrollOffset += (float) m_scrollDir * dt * speed;
+            if (m_scrollOffset >= limit) {
+                // tail reached the right edge: pause, then bounce back right
+                m_scrollOffset = limit;
+                m_scrollDir = -1;
+                m_scrollHoldUntil = elapsed + SCROLL_HOLD_EDGE;
+            } else if (m_scrollOffset <= 0.f) {
+                // head reached the left edge: pause, then bounce back left
+                m_scrollOffset = 0.f;
+                m_scrollDir = 1;
+                m_scrollHoldUntil = elapsed + SCROLL_HOLD_EDGE;
+            }
+            text->setScrollOffset(m_scrollOffset);
+        } else {
+            // keep the clock synced so the animation starts cleanly next time
+            m_lastScrollTime = m_scrollClock.getElapsedTime().asSeconds();
+            text->setScrollOffset(0.f);
         }
     }
 }

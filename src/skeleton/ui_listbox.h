@@ -58,6 +58,8 @@ namespace pemu {
 
         void setSize(float width, float height) override;
 
+        void onUpdate() override;
+
         void setTextOutlineColor(const c2d::Color &color);
 
         void setTextOutlineThickness(float thickness);
@@ -97,6 +99,18 @@ namespace pemu {
         int highlight_index = 0;
         bool use_highlight = true;
         bool highlight_use_files_color = false;
+        // marquee scroll state for the selected line text
+        c2d::C2DClock m_scrollClock;
+        float m_lastScrollTime = 0.f;
+        float m_scrollOffset = 0.f;
+        // bounce direction: +1 = scrolling left (offset grows), -1 = scrolling
+        // right (offset shrinks). the text bounces back and forth inside its
+        // bounds: head touches the left edge -> move left; tail reaches the
+        // right edge -> move right again.
+        int m_scrollDir = 1;
+        // time (clock seconds) until which the marquee stays paused (no
+        // movement): right after highlight, and when head/tail reach an edge.
+        float m_scrollHoldUntil = 0.f;
     };
 }
 
