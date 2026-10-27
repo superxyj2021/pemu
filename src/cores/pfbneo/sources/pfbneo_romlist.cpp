@@ -126,33 +126,62 @@ void PFBNRomList::build(const ss_api::GameList::GameAddedCb &cb) {
 		// 检查媒体文件信息是否填充，如果没有，强制写一个对应文件名的值当作默认值。
 		// 检查是否已存在 type 为 "video" 的媒体
 		std::string zipName = c2d::Utility::removeExt(game->path);
-		
+
+		// ==================== MODIFIED BEGIN ====================
+		// [MODIFIED] 媒体填充逻辑：
+		//  1) 先检查文件真实存在再 push_back，避免产生指向不存在文件的"幽灵"路径；
+		//  2) zipName 对应的文件不存在时，回退用 gameInfo.parent 作为文件名再检查一次；
+		//  3) 两者都不存在则不添加任何默认媒体。
+		//  同时把原来 empty()/非 empty() 两个分支合并为统一的"按类型去重 + 存在性校验"。
 		auto& m_list = game->medias;
 
-		if (m_list.empty()) {
-			game->medias.push_back({"./media/images/" + zipName + ".png", "mixrbv2", "png"});
-			game->medias.push_back({"./media/videos/" + zipName + ".mp4", "video", "mp4"});
-		} else {
-			auto hasVideo = std::find_if(
-				m_list.begin(),
-				m_list.end(),
-				[](const ss_api::Game::Media& m) { return m.type == "video"; }
-			) != m_list.end();
+		// [MODIFIED] 先检测已有媒体类型，避免重复添加
+		auto hasVideo = std::find_if(
+			m_list.begin(),
+			m_list.end(),
+			[](const ss_api::Game::Media& m) { return m.type == "video"; }
+		) != m_list.end();
 
-			auto hasImage = std::find_if(
-				m_list.begin(),
-				m_list.end(),
-				[](const ss_api::Game::Media& m) { return m.type == "mixrbv2"; }
-			) != m_list.end();
+		auto hasImage = std::find_if(
+			m_list.begin(),
+			m_list.end(),
+			[](const ss_api::Game::Media& m) { return m.type == "mixrbv2"; }
+		) != m_list.end();
 
-			if (!hasVideo) {
-				game->medias.push_back({"./media/videos/" + zipName + ".mp4", "video", "mp4"});
+		// [MODIFIED] 图片：先试游戏自身文件名，不存在再试父 rom 名，都存在才 push
+		if (!hasImage) {
+			std::string imagePath = "./media/images/" + zipName + ".png";
+			if (access((game->romsPath + imagePath).c_str(), F_OK) != 0) {
+				imagePath.clear();
+				if (!gameInfo.parent.empty()) {
+					std::string parentPath = "./media/images/" + gameInfo.parent + ".png";
+					if (access((game->romsPath + parentPath).c_str(), F_OK) == 0) {
+						imagePath = parentPath;
+					}
+				}
 			}
-
-			if (!hasImage) {
-				game->medias.push_back({"./media/images/" + zipName + ".png", "mixrbv2", "png"});
+			if (!imagePath.empty()) {
+				game->medias.push_back({imagePath, "mixrbv2", "png"});
 			}
 		}
+
+		// [MODIFIED] 视频：同样先试游戏自身文件名，不存在再试父 rom 名，都存在才 push
+		if (!hasVideo) {
+			std::string videoPath = "./media/videos/" + zipName + ".mp4";
+			if (access((game->romsPath + videoPath).c_str(), F_OK) != 0) {
+				videoPath.clear();
+				if (!gameInfo.parent.empty()) {
+					std::string parentPath = "./media/videos/" + gameInfo.parent + ".mp4";
+					if (access((game->romsPath + parentPath).c_str(), F_OK) == 0) {
+						videoPath = parentPath;
+					}
+				}
+			}
+			if (!videoPath.empty()) {
+				game->medias.push_back({videoPath, "video", "mp4"});
+			}
+		}
+		// ==================== MODIFIED END ====================
     });
 	
     printf("PFBNRomList::build: removing HARDWARE_PREFIX_ARCADE...\n");
