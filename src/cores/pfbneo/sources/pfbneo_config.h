@@ -8,6 +8,7 @@
 #include "skeleton/pemu_config.h"
 #include "pfbneo_utility.h"
 #include "burner.h"
+#include "pfbneo_turbo.h"
 
 class PFBAConfig final : public PEMUConfig {
 public:
@@ -26,6 +27,11 @@ public:
 
     std::vector<std::string> getCoreSupportedExt() override {
         return {".zip"};
+    }
+
+    // pfbneo turbo: add the per-rom "TURBO" config group
+    void onGameConfigCreate(const ss_api::Game &game, c2d::config::Config *gameConfig) override {
+        pfbneo_turbo::onGameConfigCreate(game, gameConfig);
     }
 };
 

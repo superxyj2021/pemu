@@ -73,6 +73,18 @@
 #define TEXT_MENU_KEY_MENU1                             "KEY_MENU1"
 #define TEXT_MENU_KEY_MENU2                             "KEY_MENU2"
 
+// pfbneo turbo (auto-fire) options
+#define TEXT_MENU_TURBO                                 "TURBO"
+#define TEXT_MENU_TURBO_RATE                            "TURBO_RATE"
+#define TEXT_MENU_TURBO_A                               "TURBO_A"
+#define TEXT_MENU_TURBO_B                               "TURBO_B"
+#define TEXT_MENU_TURBO_X                               "TURBO_X"
+#define TEXT_MENU_TURBO_Y                               "TURBO_Y"
+#define TEXT_MENU_TURBO_LB                              "TURBO_LB"
+#define TEXT_MENU_TURBO_RB                              "TURBO_RB"
+#define TEXT_MENU_TURBO_LT                              "TURBO_LT"
+#define TEXT_MENU_TURBO_RT                              "TURBO_RT"
+
 // main framework
 #define TEXT_NAVIGATION                                 "NAVIGATION"
 #define TEXT_RUN                                        "RUN"
@@ -278,6 +290,18 @@
 #define TEXT_MENU_KEY_START                             "键盘 START"
 #define TEXT_MENU_KEY_MENU1                             "键盘 MENU1"
 #define TEXT_MENU_KEY_MENU2                             "键盘 MENU2"
+
+// pfbneo turbo (auto-fire) options
+#define TEXT_MENU_TURBO                                 "连发设置"
+#define TEXT_MENU_TURBO_RATE                            "连发速率"
+#define TEXT_MENU_TURBO_A                               "连发 A"
+#define TEXT_MENU_TURBO_B                               "连发 B"
+#define TEXT_MENU_TURBO_X                               "连发 X"
+#define TEXT_MENU_TURBO_Y                               "连发 Y"
+#define TEXT_MENU_TURBO_LB                              "连发 LB"
+#define TEXT_MENU_TURBO_RB                              "连发 RB"
+#define TEXT_MENU_TURBO_LT                              "连发 LT"
+#define TEXT_MENU_TURBO_RT                              "连发 RT"
 
 // main framework
 #define TEXT_NAVIGATION                                 "导航"

@@ -14,6 +14,9 @@ using namespace pemu;
 PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(renderer, "PFBNEO", version) {
     printf("PFBNConfig(%s, v%i)\n", getPath().c_str(), version);
 
+    // pfbneo turbo: init log and defaults (opens /switch/turbo_debug.log)
+    pfbneo_turbo::init();
+
     c2d::Io *io = renderer->getIo();
 
     /// MAIN OPTIONS

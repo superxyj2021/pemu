@@ -4,6 +4,7 @@
 #endif
 #include "retro_input.h"
 #include "burn_gun.h"
+#include "pfbneo_turbo.h"
 
 bool bStreetFighterLayout = false;
 
@@ -327,7 +328,13 @@ static inline int CinpState(int nCode)
 	if (index == -1)
 	{
 		if (input_cb_wrapper(port, device, 0, id))
+		{
+			// pfbneo turbo: apply the auto-fire pattern to supported joystick
+			// buttons. The pattern is global (any player port / keyboard).
+			if (device == RETRO_DEVICE_JOYPAD)
+				return pfbneo_turbo::apply(id, 1);
 			return 1;
+		}
 
 		// Handle fake analog inputs
 		if (pDirections[port][PGI_ANALOG_X] == NULL && pDirections[port][PGI_LEFT] != NULL && pDirections[port][PGI_RIGHT] != NULL)
@@ -2789,6 +2796,9 @@ void InputMake(void)
 	// make sure controllers are properly set before polling
 	RefreshControllers();
 
+	// pfbneo turbo: advance auto-fire timing and refresh config (1x per frame)
+	pfbneo_turbo::tick();
+
 	for (int i = 0; i < MAX_PLAYERS; i++)
 		nLibretroInputBitmask[i] = -1;
 
@@ -3022,4 +3032,78 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 		if (bControllersSetOnce)
 			RefreshControllers();
 	}
+}
+
+// ---------------------------------------------------------------------------
+// pfbneo turbo (auto-fire) support.
+// ---------------------------------------------------------------------------
+
+// Returns the bitmask of the 8 turbo-able buttons actually used by the current
+// (active) driver mapping.
+//  - remap == false : scan the existing mapping table (game already running,
+//                     exact result, no side effects)
+//  - remap == true  : re-create the input mapping for the active driver first
+//                     (used from the rom list, game not started yet)
+unsigned PfbneoTurboGetUsedMask(bool remap)
+{
+	unsigned int mask = 0;
+
+	if (remap) {
+		// the mapping is rebuilt at game start anyway (InputInit -> GameInpInit),
+		// free a possible leftover probe allocation to avoid leaking
+		if (GameInp) {
+			free(GameInp);
+			GameInp = NULL;
+		}
+		// reset the input-mapping tables exactly like InputInit() does.
+		// Without this, sKeyBinds/nSwitchCode keep accumulating entries from
+		// every previously probed rom (opening the menu of rom A and then
+		// rom B yields the UNION of both button sets, e.g. a 6-button CPS2
+		// game like hsf2 would show up to 8 turbo buttons).
+		nSwitchCode = 0;
+		nAxisNum = 0;
+		for (int i = 0; i < MAX_KEYBINDS; i++)
+			sKeyBinds[i] = KeyBind();
+		for (int i = 0; i < MAX_PLAYERS * MAX_AXISES; i++)
+			sAxiBinds[i] = AxiBind();
+		for (int i = 0; i < MAX_PLAYERS; i++)
+			for (int j = 0; j < 6; j++)
+				pDirections[i][j] = NULL;
+		for (int i = 0; i < MAX_PLAYERS; i++)
+			for (int j = 0; j < 2; j++)
+				for (int k = 0; k < 2; k++)
+					bAnalogRightMappingDone[i][j][k] = false;
+		pgi_reset = NULL;
+		pgi_diag = NULL;
+		normal_input_descriptors.clear();
+		nMaxPlayers = BurnDrvGetMaxPlayers();
+		SetDefaultDeviceTypes();
+		SetControllerInfo();
+		GameInpInit();
+		GameInpReassign();
+	}
+
+	for (int i = 0; i < MAX_KEYBINDS; i++) {
+		if (sKeyBinds[i].device == RETRO_DEVICE_JOYPAD) {
+			int slot = pfbneo_turbo::idToSlot(sKeyBinds[i].id);
+			if (slot >= 0) {
+				mask |= (1u << slot);
+			}
+		}
+	}
+
+	// free the probe allocation again: the game is not running, the mapping
+	// will be rebuilt when it starts (and pgi_reset/pgi_diag are only used
+	// during emulation)
+	if (remap && GameInp) {
+		free(GameInp);
+		GameInp = NULL;
+	}
+
+	return mask;
+}
+
+bool PfbneoTurboInputInitialized()
+{
+	return bInputInitialized;
 }

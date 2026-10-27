@@ -143,6 +143,15 @@ namespace pemu {
 
         virtual std::vector<int> getCoreHiddenOptionToEnable() { return {}; }
 
+        // called by loadGame() right before the per-rom config file is loaded,
+        // allows a core to add its own per-rom options (e.g. pfbneo turbo)
+        virtual void onGameConfigCreate(const ss_api::Game &game, c2d::config::Config *gameConfig) { (void) game; (void) gameConfig; }
+
+        // return the list of config groups used by the menu:
+        //  - isGame == false: the global/main config groups
+        //  - isGame == true : the per-rom (game) config groups
+        std::vector<c2d::config::Group> *getGroups(bool isGame = false);
+
     private:
         Config *p_game_config = nullptr;
         c2d::Renderer *p_renderer = nullptr;

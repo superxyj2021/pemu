@@ -9,6 +9,7 @@
 #include "pfbneo_ui_emu.h"
 #include "pfbneo_ui_video.h"
 #include "pfbneo_utility.h"
+#include "pfbneo_turbo.h"
 #include "retro_input_wrapper.h"
 
 using namespace c2d;
@@ -107,6 +108,11 @@ int PFBAUiEmu::getSekCpuCore() {
 int PFBAUiEmu::load(const ss_api::Game &game) {
     currentGame = game;
 
+    // load the per-rom config now (turbo settings + emulation/gamepad options).
+    // this must happen before DrvInit so that saved values (e.g. turbo) are
+    // applied from the very first frame and game specific options are used.
+    pMain->getConfig()->loadGame(game);
+
     PFBNEOUtility::setDriverActive(game);
     if (nBurnDrvActive >= nBurnDrvCount) {
         printf("PFBAUiEmu::load: driver not found\n");
@@ -194,6 +200,9 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
     // VIDEO
     //////////
 
+    // pfbneo turbo: reset counters + log game start
+    pfbneo_turbo::onGameStart();
+
     return UiEmu::load(game);
 }
 
@@ -215,6 +224,8 @@ void ReinitialiseVideo()
 }
 
 void PFBAUiEmu::stop() {
+    // pfbneo turbo: log game stop and clear runtime state
+    pfbneo_turbo::onGameStop();
     DrvExit();
     if (pBurnSoundOut) {
         free(pBurnSoundOut);

@@ -177,7 +177,8 @@ void UiMenu::load(bool isGame) {
     menu_options.insert(menu_options.begin(), {TEXT_MONEY, nullptr});
     menu_options.insert(menu_options.begin() + 1, {TEXT_MONEY2, nullptr});
     // ======================================================	
-    auto groups = ui->getConfig()->getGroups();
+    // load groups: main config groups, or per-rom groups when in the rom menu
+    auto groups = ui->getConfig()->getGroups(isGame);
     for (auto &group: *groups) {
         // skip some options if needed
         if (group.getName() == "ROMS") continue;

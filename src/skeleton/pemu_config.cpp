@@ -200,9 +200,21 @@ bool PEMUConfig::loadGame(const Game &game) {
     p_game_config->addGroup(group);
 #endif
 
+    // let the core add its own per-rom options (e.g. pfbneo turbo),
+    // this must happen before the load() below so that previously
+    // saved values are read back into the option objects
+    onGameConfigCreate(game, p_game_config);
+
     p_game_config->load();
 
     return true;
+}
+
+std::vector<c2d::config::Group> *PEMUConfig::getGroups(bool isGame) {
+    if (isGame && p_game_config) {
+        return p_game_config->getGroups();
+    }
+    return Config::getGroups();
 }
 
 bool PEMUConfig::saveGame() {
