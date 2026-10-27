@@ -111,7 +111,7 @@ public:
 
 class UiStateList : public RectangleShape {
 public:
-    UiStateList(UiMain *ui, const FloatRect &rect) : RectangleShape(rect) {
+    UiStateList(UiMain *ui, const FloatRect &rect) : RectangleShape(rect), ui(ui) {
         UiStateList::setFillColor(Color::Transparent);
 
         // add states items
@@ -166,7 +166,18 @@ public:
         setSelection(index);
     }
 
+    void onUpdate() override {
+        RectangleShape::onUpdate();
+        // statemenu highlight = the selected slot's OUTLINE (set in
+        // setSelection() from the skin HIGHLIGHT > outline_color): animate it
+        // with the same two-color gradient as the rom list / menus.
+        if (index >= 0 && index < STATES_COUNT && states[index]) {
+            states[index]->setOutlineColor(ui->getSkin()->getHighlightGradientColor());
+        }
+    }
+
     UiState *states[STATES_COUNT]{};
+    UiMain *ui = nullptr;
     int index = 0;
 };
 

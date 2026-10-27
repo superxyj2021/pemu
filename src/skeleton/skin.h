@@ -102,6 +102,12 @@ namespace pemu {
 
         c2d::Text::Overflow getOverflow(c2d::config::Group *group);
 
+        // highlight selection color for listbox/menu, oscillating between the
+        // skin's HIGHLIGHT > outline_color and HIGHLIGHT > outline_color2 (both
+        // palette names from COLORS). if HIGHLIGHT > gradient is OFF, returns
+        // "outline_color". applied to the highlight OUTLINE only.
+        c2d::Color getHighlightGradientColor();
+
     private:
         c2d::config::Group createRectangleShapeGroup(const std::string &name);
 

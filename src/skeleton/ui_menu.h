@@ -37,6 +37,8 @@ namespace pemu {
 
         bool onInput(c2d::Input::Player *players) override;
 
+        void onUpdate() override;
+
         void setVisibility(c2d::Visibility visibility, bool tweenPlay = false) override;
 		
 		void showDonateImage();

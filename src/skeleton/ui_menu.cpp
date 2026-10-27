@@ -284,6 +284,17 @@ void UiMenu::onKeyDown() {
     updateLines();
 }
 
+void UiMenu::onUpdate() {
+    // highlight gradient animation: applied to the highlight OUTLINE only
+    // (the selection box is drawn by its outline), the fill color keeps the
+    // skin's HIGHLIGHT > color (semi-transparent) untouched.
+    if (highlight) {
+        auto col = ui->getSkin()->getHighlightGradientColor();
+        highlight->setOutlineColor(col);
+    }
+    SkinnedRectangle::onUpdate();
+}
+
 bool UiMenu::onInput(c2d::Input::Player *players) {
     unsigned int buttons = players[0].buttons;
 

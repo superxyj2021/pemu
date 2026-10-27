@@ -350,6 +350,14 @@ void UIRomList::onUpdate() {
         return;
     }
 
+    // highlight gradient animation: the gradient is applied to the highlight
+    // OUTLINE (that's what makes the selection box visible), the fill color
+    // keeps the skin's HIGHLIGHT > color (semi-transparent) untouched.
+    if (pListBox && pListBox->getHighlight()) {
+        auto col = pMain->getSkin()->getHighlightGradientColor();
+        pListBox->getHighlight()->setOutlineColor(col);
+    }
+
     unsigned int buttons = pMain->getInput()->getButtons();
 
     if (buttons > 0 && buttons != Input::Delay) {

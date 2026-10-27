@@ -5,6 +5,8 @@
 #include "pemu.h"
 #include "skin.h"
 
+#include <cmath>
+
 Skin::Skin(UiMain *u) {
     pMain = u;
 
@@ -92,6 +94,13 @@ Skin::Skin(UiMain *u) {
 
     /// HIGHLIGHT
     config::Group highlight = createRectangleShapeGroup("HIGHLIGHT");
+    // highlight gradient animation config (skin config.cfg > HIGHLIGHT):
+    //   gradient       = 1/0 (enable/disable the two-color oscillation),
+    //   outline_color  = palette name of the first gradient color (existing),
+    //   outline_color2 = palette name of the second gradient color (new).
+    // the gradient is applied to the highlight OUTLINE only.
+    highlight.addOption({"gradient", 1});
+    highlight.addOption({"outline_color2", c2d::Color(255, 0, 128)});
     pConfig->addGroup(highlight);
 
     /// MESSAGEBOX
@@ -664,6 +673,51 @@ float Skin::getOutlineThickness(c2d::config::Group *group) {
     }
 
     return 0;
+}
+
+c2d::Color Skin::getHighlightGradientColor() {
+    // shared static clock so the rom list and the menus animate in sync
+    static c2d::C2DClock clock;
+
+    auto *group = pConfig ? pConfig->getGroup("HIGHLIGHT") : nullptr;
+    if (!group) {
+        return c2d::Color::GrayLight;
+    }
+
+    // gradient on/off (default ON)
+    auto *enableOpt = group->getOption("gradient");
+    bool enabled = !enableOpt || enableOpt->getInteger() == 1;
+
+    // first gradient color: HIGHLIGHT > outline_color (e.g. "color1")
+    c2d::Color c1 = getColor(group, "outline_color");
+    // second gradient color: HIGHLIGHT > outline_color2 (e.g. "color45")
+    c2d::Color c2 = getColor(group, "outline_color2");
+    // fallback if the palette entry is missing/transparent
+    if (c1.r == 0 && c1.g == 0 && c1.b == 0 && c1.a == 0) {
+        c1 = c2d::Color::GrayLight;
+    }
+    if (c2.r == 0 && c2.g == 0 && c2.b == 0 && c2.a == 0) {
+        c2 = c2d::Color(255, 0, 128);
+    }
+
+    if (!enabled) {
+        return c1;
+    }
+
+    // linear ping-pong: color1 -> color2 -> color1 ... (slow round-trip, ~4s)
+    // triangle wave over [0,1]: 0..1..0, 2s to go from c1 to c2 and 2s back
+    float t = std::fmod(clock.getElapsedTime().asSeconds() / 2.0f, 2.0f);
+    if (t > 1.0f) {
+        t = 2.0f - t;
+    }
+    c2d::Color c;
+    c.r = (uint8_t) (c1.r + (c2.r - c1.r) * t);
+    c.g = (uint8_t) (c1.g + (c2.g - c1.g) * t);
+    c.b = (uint8_t) (c1.b + (c2.b - c1.b) * t);
+    // the gradient is used for the highlight OUTLINE, keep it fully visible
+    // (use the most opaque of the two palette colors)
+    c.a = std::max(c1.a, c2.a);
+    return c;
 }
 
 Origin Skin::getOrigin(c2d::config::Group *group) {
