@@ -66,9 +66,14 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
 		// superxyj modified, reduce scanning time by loading only the rom files exists
         gameList->append(gameListPath, p.path, false, filters, p.system, true, [this](Game *game) {
             if (p_cb) p_cb(game);
-            m_count++;
-            if (!(m_count % 10)) {
-                setLoadingText(TEXT_MSG_GAMES_SEARCH, m_count);
+            // count only the roms that will actually be kept in the list,
+            // so the scan counter matches the listbox count (roms that the
+            // core driver does not support, bios zips, etc. are excluded)
+            if (isGameSupported(*game)) {
+                m_count++;
+                if (!(m_count % 10)) {
+                    setLoadingText(TEXT_MSG_GAMES_SEARCH, m_count);
+                }
             }
         });
         //setLoadingText(TEXT_MSG_GAMES_SEARCH, m_games_available_count, m_games_count);

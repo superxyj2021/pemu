@@ -18,6 +18,15 @@ namespace pemu {
 
         virtual void build(const ss_api::GameList::GameAddedCb &cb = nullptr);
 
+        // core hook: tells whether the game will actually be kept in the
+        // rom list (driver support, bios zips, ...). The scan counter only
+        // counts supported games so it matches the listbox count.
+        // default: keep everything (non pfbneo cores are not affected)
+        virtual bool isGameSupported(const ss_api::Game &game) {
+            (void) game;
+            return true;
+        }
+
         virtual void initFav();
 
         void addFav(const ss_api::Game &game);

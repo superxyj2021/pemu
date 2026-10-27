@@ -11,6 +11,8 @@ public:
             : RomList(ui, emuVersion, filters) {};
 
     void build(const ss_api::GameList::GameAddedCb &cb = nullptr) override;
+
+    bool isGameSupported(const ss_api::Game &game) override;
 };
 
 #endif //PEMU_PFBNEO_ROMLIST_H

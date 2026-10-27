@@ -181,3 +181,23 @@ void PFBNRomList::build(const ss_api::GameList::GameAddedCb &cb) {
     printf("PFBNRomList::build(): list built in %f\n", time_spent);
 #endif
 }
+
+bool PFBNRomList::isGameSupported(const ss_api::Game &game) {
+    // NOTE: must stay in sync with the keep-filter used in
+    // GameList::append() (ss_gamelist.cpp): bios roms, the "neogeo.zip"
+    // bios and roms not supported by the FBNeo driver (their name is
+    // replaced with "UnsupportedROM" by getGameInfo() in build()) are
+    // not added to the rom list, so they must not be counted either.
+    // this is called from RomList::build() AFTER the pfbneo build
+    // callback ran, so game.name/genre already contain the FBNeo values.
+    if (game.path == "neogeo.zip") {
+        return false;
+    }
+    if (game.genre.id & GBF_BIOS) {
+        return false;
+    }
+    if (game.name == "UnsupportedROM") {
+        return false;
+    }
+    return true;
+}
