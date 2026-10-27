@@ -121,6 +121,29 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
         return -1;
     }
 
+    // show the loading screen: use the SAME (chinese) display name used in the
+    // rom list (getGameInfo -> GetGameDisplayName). the glyphs of the title and
+    // message are pre-warmed into the font atlas BEFORE the first present, so
+    // the first frame is never drawn while the atlas is still being filled
+    // (that was the cause of the garbled/flickering title). the progress bar is
+    // then kept moving by the throttled flip() in ProgressUpdateBurner.
+    {
+        auto gameInfo = PFBNEOUtility::getGameInfo(currentGame,
+                                                   pMain->getIo()->getRomFsPath() + "langs/gamelist.bin");
+        auto *progressBox = pMain->getUiProgressBox();
+        progressBox->setTitle(gameInfo.name.empty() ? currentGame.name : gameInfo.name);
+        progressBox->setMessage(TEXT_MSG_PLEASE_WAIT);
+        progressBox->setProgress(0);
+        progressBox->setVisibility(Visibility::Visible);
+        progressBox->setLayer(1000);
+        // pre-warm: force the title + message glyphs into the font atlas now
+        // (getSize() -> ensureGeometryUpdate() -> Font::getGlyph) so the first
+        // present below is clean.
+        progressBox->getTitleText()->getSize();
+        progressBox->getMessageText()->getSize();
+        pMain->flip();
+    }
+
 #ifdef __PFBA_ARM__
     nSekCpuCore = getSekCpuCore();
     printf("nSekCpuCore: %s\n", nSekCpuCore > 0 ? "M68K" : "C68K (ASM)");

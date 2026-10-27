@@ -162,8 +162,23 @@ static int ProgressCreate() {
     return 0;
 }
 
+// throttled present for the loading progress: present at most every 100ms so
+// the progress bar keeps moving while minimizing the number of mid-load frames
+// that could catch the font atlas being updated with new glyphs.
+static c2d::C2DClock s_progressClock;
+static float s_lastProgressFlip = 0;
+
 int ProgressUpdateBurner(double dProgress, const TCHAR *pszText, bool bAbs) {
-    pemu_ui->getUiProgressBox()->setTitle(BurnDrvGetTextA(DRV_FULLNAME));
+    // NOTE (loading screen fixes):
+    // 1) the title is set ONCE by PFBAUiEmu::load() using the (chinese) game
+    //    display name from the rom list. do NOT overwrite it with the english
+    //    driver full name here.
+    // 2) flip() is done here but THROTTLED (every 100ms): DrvInit() is a
+    //    synchronous, blocking call so without any present the progress bar
+    //    data updates but never appears on screen. the title and "Please wait"
+    //    glyphs are pre-warmed into the font atlas by PFBAUiEmu::load() before
+    //    the first frame, so the digits/messages added later rarely trigger a
+    //    mid-frame atlas update.
 
     if (pszText) {
         nProgressPosBurn += dProgress;
@@ -173,7 +188,11 @@ int ProgressUpdateBurner(double dProgress, const TCHAR *pszText, bool bAbs) {
         pemu_ui->getUiProgressBox()->setMessage("Please wait...");
     }
 
-    pemu_ui->flip();
+    float now = s_progressClock.getElapsedTime().asSeconds();
+    if (now - s_lastProgressFlip >= 0.1f) {
+        s_lastProgressFlip = now;
+        pemu_ui->flip();
+    }
 
     return 0;
 }
