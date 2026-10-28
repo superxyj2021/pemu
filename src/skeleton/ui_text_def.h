@@ -301,7 +301,7 @@
 // pfbneo donate (打赏作者) dialog
 #define TEXT_MONEY2_TEXT1       "汉化和开发新功能不易，请帮忙给个赞赏让作者可以买杯咖啡~~ :)"
 #define TEXT_MONEY2_VERSION     "FBNeo Plus 版本: "
-#define TEXT_MONEY2_VERSION_DEFAULT "7.1build20261028"
+#define TEXT_MONEY2_VERSION_DEFAULT "7.2.3b20261028"
 
 // pfbneo turbo (auto-fire) options
 #define TEXT_MENU_TURBO                                 "连发设置"
