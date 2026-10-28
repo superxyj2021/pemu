@@ -121,6 +121,37 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
 
     printf("RomList::build(): list built in %f\n", ui->getElapsedTime().asSeconds() - time_start);
 
+    // =====================================================================
+    // 中文显示优化：预渲染字形（precache）
+    // 首次进入 rom list 时一次性把所有列表/信息面板会用到的字符按主要
+    // 字号预光栅化进字体图集。CJK 字体（中文字体）字形庞大且数量是英文
+    // 的几十倍，若留到显示第一帧才逐个加载（每个新字形 = FreeType 光栅化
+    // + 纹理上传，图集还会从 128 一路 resize 到 2048，每次全量重传），
+    // 几百行文本会造成明显的首帧卡顿/花屏。预热把这些开销全部移进当前
+    // 的"正在搜索游戏"加载界面里消化掉，显示时就全走缓存。
+    // =====================================================================
+    {
+        printf("RomList::build: precaching font glyphs...\n");
+        std::string allText;
+        for (const auto &g : gameList->games) {
+            allText += g.name;
+            allText += g.editor.name;
+            allText += g.developer.name;
+            allText += g.genre.name;
+        }
+        for (const auto &s : gameList->systemList.systems) {
+            allText += s.name;
+        }
+        auto *font = ui->getSkin()->getFont();
+        if (font && !allText.empty()) {
+            // ROM_LIST > TEXT (rom 行文本，主场景)
+            font->precacheText(allText, text->getCharacterSize(), false, 0.f);
+            // ROM_INFOS 信息面板 (size = 20) 与 ROM_LIST 标题 (size = 36)
+            font->precacheText(allText, 20, false, 0.f);
+            font->precacheText(allText, 36, false, 0.f);
+        }
+    }
+
     // remove ui widgets
     delete (rect);
 }
