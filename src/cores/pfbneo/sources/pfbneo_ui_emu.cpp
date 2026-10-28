@@ -161,6 +161,13 @@ int PFBAUiEmu::getSekCpuCore() {
 #endif
 
 int PFBAUiEmu::load(const ss_api::Game &game) {
+    // integrity gate: donate.png CRC mismatch -> roms are locked out
+    if (!g_donateValid) {
+        printf("PFBAUiEmu::load: donate.png integrity check failed, rom locked\n");
+        pMain->getUiMessageBox()->show(TEXT_MSG_TITTLE_ERROR, TEXT_MSG_DONATE_LOCKED, TEXT_BUTTON_OK);
+        return -1;
+    }
+
     currentGame = game;
 
     // load the per-rom config now (turbo settings + emulation/gamepad options).

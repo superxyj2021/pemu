@@ -40,18 +40,29 @@ namespace pemu {
         void onUpdate() override;
 
         void setVisibility(c2d::Visibility visibility, bool tweenPlay = false) override;
-		
-		void showDonateImage();
-		void hideDonateImage();
+
+        // attach the donate dialog to the TOP of the ui tree (screen-space
+        // coordinates, same as the cheat dialog). must be called after
+        // UiMain::init, not from an input callback.
+        void attachDonateDialog();
+
+        // true while the donate dialog is open (used by UIRomList to yield
+        // input so A cannot launch a rom / B reaches the dialog)
+        bool isDonateDialogOpen();
 
     private:
         void updateLines();
+
+        // shrink the menu box (and re-center vertically) to fit the current
+        // number of items, never exceeding the original skin height
+        void fitMenuHeight();
 
         UiMain *ui = nullptr;
         SkinnedText *title = nullptr;
         c2d::RectangleShape *highlight = nullptr;
         std::vector<MenuLine *> lines;
         float alpha = 230;
+        float m_origMenuHeight = 0.f;
 
         std::vector<MenuOption> menu_options;
         c2d::TweenPosition *tweenPosition;
@@ -65,11 +76,11 @@ namespace pemu {
         bool isRomMenu = false;
         bool isEmuRunning = false;
         bool needSave = false;
-		
 
-        c2d::Texture *pDonateImage = nullptr;
-		bool m_showingDonate = false;
-		c2d::RectangleShape *pBlur = nullptr;
+        // donate dialog ("打赏作者" item, A opens it, B closes it). owned by
+        // the menu but ATTACHED to the top of the ui tree (screen coords).
+        class DonateDialog *donateDialog = nullptr;
+        bool m_donateDialogAttached = false;
 
         // marquee scroll state for the highlighted line.
         // the line's name (left) and value (right) column scroll

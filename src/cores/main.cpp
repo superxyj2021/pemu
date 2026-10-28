@@ -4,10 +4,67 @@
 
 #include "main.h"
 
+#include <cstdio>
+
 using namespace c2d;
 using namespace pemu;
 
 PEMUUiMain *pemu_ui;
+
+// ---- CRC32 (IEEE 802.3, polynomial 0xEDB88320) ----
+namespace {
+    unsigned int crc32Table[256];
+    bool crc32TableReady = false;
+
+    void crc32InitTable() {
+        if (crc32TableReady) {
+            return;
+        }
+        for (unsigned int i = 0; i < 256; i++) {
+            unsigned int c = i;
+            for (int k = 0; k < 8; k++) {
+                c = (c & 1) ? (0xEDB88320u ^ (c >> 1)) : (c >> 1);
+            }
+            crc32Table[i] = c;
+        }
+        crc32TableReady = true;
+    }
+
+    unsigned int crc32File(const char *path) {
+        FILE *f = fopen(path, "rb");
+        if (!f) {
+            return 0;
+        }
+        crc32InitTable();
+        unsigned int crc = 0xFFFFFFFFu;
+        unsigned char buf[4096];
+        size_t n;
+        while ((n = fread(buf, 1, sizeof(buf), f)) > 0) {
+            for (size_t i = 0; i < n; i++) {
+                crc = crc32Table[(crc ^ buf[i]) & 0xFFu] ^ (crc >> 8);
+            }
+        }
+        fclose(f);
+        return crc ^ 0xFFFFFFFFu;
+    }
+}
+
+// donate.png integrity flag: defined in the skeleton (ui_menu.cpp, defaults to
+// true so non-pfbneo cores are unaffected), checked once at startup below and
+// read by UiMenu::load (menu shows only "退出") and PFBAUiEmu::load (roms
+// locked). any tampering (CRC mismatch or missing file) is treated as
+// modified.
+static void checkDonateIntegrity(C2DIo *io) {
+    if (!io) {
+        g_donateValid = false;
+        return;
+    }
+    const std::string path = io->getRomFsPath() + "donate/donate.png";
+    const unsigned int crc = crc32File(path.c_str());
+    g_donateValid = (crc == 0x74b88c25u);
+    printf("pfbneo: donate.png CRC32 = 0x%08X, %s\n", crc,
+           g_donateValid ? "OK" : "TAMPERED (features locked)");
+}
 
 int main(int argc, char **argv) {
     // command line game info
@@ -41,6 +98,9 @@ int main(int argc, char **argv) {
     // load skin configuration
     const auto skin = new PEMUSkin(pemu_ui);
     pemu_ui->setSkin(skin);
+
+    // donate.png integrity check (locks roms and trims the +/- menus on tamper)
+    checkDonateIntegrity(io);
 
     // parse command line
     if (argc > 1) {
@@ -76,6 +136,10 @@ int main(int argc, char **argv) {
     // input callback) can be skipped by the c2d render traversal, which is why
     // the dialog was never drawn.
     uiEmu->attachToUi();
+
+    // donate dialog: attached to the TOP of the ui tree (screen coords), same
+    // reason - must happen after init, not from an input callback.
+    uiMenu->attachDonateDialog();
 
     // load specified game from command line if requested
     if (!game.path.empty()) {

@@ -242,6 +242,7 @@ void UIRomList::setVisibility(c2d::Visibility visibility, bool tweenPlay) {
 
 bool UIRomList::onInput(c2d::Input::Player *players) {
     if (pMain->getUiMenu()->isVisible()
+        || pMain->getUiMenu()->isDonateDialogOpen()
         || pMain->getUiStateMenu()->isVisible()
         || pMain->getUiProgressBox()->isVisible()) {
         return false;

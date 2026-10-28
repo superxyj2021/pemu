@@ -298,6 +298,11 @@
 #define TEXT_DIALOG_CURRENT                            "  ←"
 #define TEXT_DIALOG_EMPTY                              "该游戏没有金手指文件"
 
+// pfbneo donate (打赏作者) dialog
+#define TEXT_MONEY2_TEXT1       "汉化和开发新功能不易，请帮忙给个赞赏让作者可以买杯咖啡~~ :)"
+#define TEXT_MONEY2_VERSION     "FBNeo Plus 版本: "
+#define TEXT_MONEY2_VERSION_DEFAULT "7.1build20261028"
+
 // pfbneo turbo (auto-fire) options
 #define TEXT_MENU_TURBO                                 "连发设置"
 #define TEXT_MENU_TURBO_RATE                            "连发速率"
@@ -378,6 +383,7 @@
 #define TEXT_MSG_ROM_CRYPTED                            "ROM已加密，请使用解密/克隆ROM\n启用CYCLONE汇编内核速度更快"
 #define TEXT_MSG_NOT_SUPPORT_M68K_ASM_CODE              "这个游戏不支持M68K汇编内核\CYCLONE汇编内核已禁用"
 #define TEXT_MSG_DRIVER_NOT_FOUND                       "FBNEO不支持此游戏..."
+#define TEXT_MSG_DONATE_LOCKED                          "程序文件校验失败，疑似被篡改过，功能已锁定。"
 #define TEXT_MSG_DRIVER_INIT_FAILED                     "驱动初始化失败"
 #define TEXT_MSG_PRESS_BUTTON2_FOR_DIAG_MENU            "提示: 按住START键2秒可以打开诊断菜单..."
 #define TEXT_MSG_PRESS_COIN_BUTTON_TO_RESET             "提示: 按住投币键2秒可以重置当前游戏..."

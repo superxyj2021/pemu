@@ -43,6 +43,12 @@
 #define PEMU_ENABLE_DEBUG_LOG 0
 #endif
 
+// donate.png integrity flag (set once at startup by the core's main()).
+// when the CRC32 of romfs:/donate/donate.png does not match the expected
+// value the file is considered tampered: opening any rom is blocked and the
+// +/- menus only show the "退出" (quit) entry.
+extern bool g_donateValid;
+
 using namespace c2d;
 using namespace pemu;
 using namespace ss_api;

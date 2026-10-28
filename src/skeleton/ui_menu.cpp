@@ -6,9 +6,13 @@
 
 #include <algorithm>
 #include "ui_menu.h"
-#include "buffer.h"
+#include "ui_donate_dialog.h"
 
 using namespace c2d::config;
+
+// donate.png integrity flag (see pemu.h). defined here in the skeleton so
+// every core links it; pfbneo's main() overrides it after the CRC32 check.
+bool g_donateValid = true;
 
 // marquee scroll tuning (same feel as the rom list)
 static const float SCROLL_HOLD_START = 0.5f;
@@ -151,17 +155,48 @@ UiMenu::UiMenu(UiMain *uiMain) : SkinnedRectangle(uiMain, {"OPTIONS_MENU"}) {
     tweenPosition->setState(TweenState::Stopped);
     UiMenu::add(tweenPosition);
 
-	// add blur
-	pBlur = new RectangleShape({UiMenu::getSize().x+4, UiMenu::getSize().y+200});
-	pBlur->setFillColor(Color::Gray);
-	pBlur->add(new TweenAlpha(0, 230, 0.2));
-	pBlur->setPosition(getSize().x / 2, getSize().y / 2);
-	pBlur->setOrigin(Origin::Center);	
-	pBlur->setVisibility(Visibility::Hidden);
-	UiMenu::add(pBlur);		
+    // donate dialog ("打赏作者"): created once, hidden until A is pressed.
+    // NOT added here: it must be attached to the TOP of the ui tree
+    // (screen-space coordinates), which happens via attachDonateDialog()
+    // right after UiMain::init in main.cpp - adding it as a menu child
+    // would make its coordinates relative to the (offscreen) menu.
+    donateDialog = new DonateDialog(uiMain);
+
+    // remember the skin's original menu height: load() shrinks the box to
+    // fit the item count and must never grow beyond this.
+    m_origMenuHeight = UiMenu::getSize().y;
 
     // hide by default
     UiMenu::setVisibility(Visibility::Hidden);
+}
+
+void UiMenu::fitMenuHeight() {
+    float origH = m_origMenuHeight > 0.f ? m_origMenuHeight : UiMenu::getSize().y;
+    int vis = (int) menu_options.size();
+    if (vis > maxLines) {
+        vis = maxLines;
+    }
+    float newH = (float) vis * lineHeight;
+    if (newH > origH) {
+        newH = origH;
+    }
+    if (newH < 2.f * lineHeight) {
+        newH = 2.f * lineHeight;
+    }
+    setSize(UiMenu::getSize().x, newH);
+    // vertical center on the screen, keep the original x position
+    setPosition(getPosition().x, (ui->getSize().y - newH) / 2.f);
+}
+
+void UiMenu::attachDonateDialog() {
+    if (donateDialog && !m_donateDialogAttached) {
+        ui->add(donateDialog);
+        m_donateDialogAttached = true;
+    }
+}
+
+bool UiMenu::isDonateDialogOpen() {
+    return donateDialog && donateDialog->isVisible();
 }
 
 void UiMenu::load(bool isGame) {
@@ -180,6 +215,24 @@ void UiMenu::load(bool isGame) {
     // set options items
     optionIndex = highlightIndex = 0;
     menu_options.clear();
+
+    // integrity gate: when romfs:/donate/donate.png failed the CRC32 check,
+    // the +/- menus may still open but show ONLY the quit entry. everything
+    // else (settings, rom menu, donate, cheat...) is hidden, and roms stay
+    // locked by PFBAUiEmu::load.
+    if (!g_donateValid) {
+        title->setString(TEXT_MAIN_MENU);
+        menu_options.push_back({TEXT_QUIT, nullptr});
+        fitMenuHeight();
+        setAlpha(isEmuRunning ? (uint8_t) (alpha - 50) : (uint8_t) alpha);
+        onKeyDown();
+        if (!isVisible()) {
+            setLayer(1);
+            setVisibility(Visibility::Visible, true);
+        }
+        return;
+    }
+
     // === 新增: 在菜单第一行添加"打赏"和"打赏作者"菜单项 ===
     menu_options.insert(menu_options.begin(), {TEXT_MONEY, nullptr});
     menu_options.insert(menu_options.begin() + 1, {TEXT_MONEY2, nullptr});
@@ -214,6 +267,10 @@ void UiMenu::load(bool isGame) {
     // actually running (NOT in the main screen's rom menu opened with Menu2)
     if (isRomMenu && isEmuRunning) menu_options.push_back({TEXT_CHEATS, nullptr});
     menu_options.push_back({TEXT_QUIT, nullptr});
+
+    // shrink the menu box to fit the item count (vertical center, never
+    // larger than the original skin height)
+    fitMenuHeight();
 
     setAlpha(isEmuRunning ? (uint8_t) (alpha - 50) : (uint8_t) alpha);
 
@@ -383,6 +440,14 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
         return C2DObject::onInput(players);
     }
 
+    // donate dialog ("打赏作者"): while it is open it owns the input (B
+    // closes). also swallow the very frame right after closing, so the same B
+    // press does not hide the (just re-opened) menu again.
+    if (donateDialog && (donateDialog->isVisible() || donateDialog->justClosed())) {
+        donateDialog->onInput(players);
+        return true;
+    }
+
     // extra dialogs (e.g. the pfbneo cheat dialog) are added AFTER the menu
     // in the ui tree: while one is open, let it handle all input directly.
     if (ui->getUiEmu() && ui->getUiEmu()->isExtraDialogOpen()) {
@@ -545,10 +610,14 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
                 ui->done = true;
             }
         }
-        // === 新增: "打赏作者"菜单项被选中时显示打赏图片 ===
-        else if (lines.at(highlightIndex)->p_name->getString() == TEXT_MONEY2 && !m_showingDonate) 
+        // === 新增: "打赏作者"菜单项被选中时打开打赏对话框 ===
+        else if (lines.at(highlightIndex)->p_name->getString() == TEXT_MONEY2)
 		{
-            showDonateImage();
+            // hide the menu first: the donate dialog takes over the screen.
+            // closing it resumes the game (if running) or brings the menu back
+            // (main screen case) - handled in DonateDialog::onInput.
+            setVisibility(Visibility::Hidden, true);
+            donateDialog->open();
         }
         // ======================================================
     }
@@ -557,9 +626,9 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
     //if (buttons & Input::Button::Menu1 || buttons & Input::Button::Menu2 || buttons & Input::Button::B) 
 	if (buttons & Input::Button::B) 
 	{
-		//判断下是否开着打赏图片
-		if (m_showingDonate) 
-			hideDonateImage();
+		//判断下是否开着打赏对话框
+		if (donateDialog && donateDialog->isVisible())
+			donateDialog->close();
 		else
 		{
 			setVisibility(Visibility::Hidden, true);
@@ -573,9 +642,11 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
 }
 
 void UiMenu::setVisibility(Visibility visibility, bool tweenPlay) {
-        // === 新增: 菜单隐藏时关闭打赏图片 ===
+        // === 新增: 菜单隐藏时关闭打赏对话框 ===
     if (visibility == Visibility::Hidden) {
-        hideDonateImage();
+        if (donateDialog) {
+            donateDialog->close();
+        }
     }
 	
 	if (ui->getUiRomList() && ui->getUiRomList()->isVisible()) {
@@ -589,52 +660,6 @@ void UiMenu::setVisibility(Visibility visibility, bool tweenPlay) {
     }
 
     RectangleShape::setVisibility(visibility, tweenPlay);
-}
-
-// === 新增: 显示打赏图片 ===
-void UiMenu::showDonateImage() {
-    if (m_showingDonate) 
-		return;
-	
-	if ( pDonateImage == nullptr )
-	{
-		pDonateImage = new C2DTexture(buffer_img, BUFFER_IMG_SIZE);
-
-		if (pDonateImage->available) 
-		{
-			float tex_scaling = std::min(
-					getSize().x / (float) pDonateImage->getTextureRect().width,
-					getSize().y / (float) pDonateImage->getTextureRect().height);
-			pDonateImage->setScale(tex_scaling, tex_scaling);
-			pDonateImage->setPosition(getSize().x / 2, getSize().y / 2);
-			pDonateImage->setOrigin(Origin::Center);
-			add(pDonateImage);
-			pBlur->setVisibility(Visibility::Visible, true);
-			pDonateImage->setVisibility(Visibility::Visible, true);
-		}
-	}
-	else
-	{
-		if (pDonateImage->available) 
-		{
-			pBlur->setVisibility(Visibility::Visible, true);
-			pDonateImage->setVisibility(Visibility::Visible, true);
-		}
-	}
-	
-	m_showingDonate	= true;
-}
-
-// === 新增: 隐藏打赏图片 ===
-void UiMenu::hideDonateImage() {
-    if (!m_showingDonate) 
-		return;
-
-	if ( pDonateImage != nullptr && pDonateImage->available)
-		pDonateImage->setVisibility(Visibility::Hidden, true);
-
-	pBlur->setVisibility(Visibility::Hidden, true);
-	m_showingDonate	= false;
 }
 
 UiMenu::~UiMenu() {
