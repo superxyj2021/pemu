@@ -80,6 +80,14 @@ UIRomList::UIRomList(UiMain *main, RomList *romList, const c2d::Vector2f &size)
     pListBox->setHighlightUseFileColor(highlightUseFileColors);
     UIRomList::add(pListBox);
 
+	// 添加newstyle皮肤增加的几个UI组件
+    auto *line1 = new SkinnedRectangle(pMain, {"SKIN_CONFIG", "MAIN", "LINE1"});
+    UIRomList::add(line1);
+    auto *line2 = new SkinnedRectangle(pMain, {"SKIN_CONFIG", "MAIN", "LINE2"});
+    UIRomList::add(line2);
+	auto *line3 = new SkinnedRectangle(pMain, {"SKIN_CONFIG", "MAIN", "LINE3"});
+    UIRomList::add(line3);
+
     // add blur
     pBlur = new RectangleShape(UIRomList::getLocalBounds());
     pBlur->setFillColor(Color::Gray);
@@ -89,14 +97,7 @@ UIRomList::UIRomList(UiMain *main, RomList *romList, const c2d::Vector2f &size)
 
     int delay = pMain->getConfig()->get(PEMUConfig::OptId::UI_VIDEO_SNAP_DELAY)->getInteger();
     UIRomList::setVideoSnapDelay(delay);
-	
-	// 添加newstyle皮肤增加的几个UI组件
-    auto *line1 = new SkinnedRectangle(pMain, {"SKIN_CONFIG", "MAIN", "LINE1"});
-    UIRomList::add(line1);
-    auto *line2 = new SkinnedRectangle(pMain, {"SKIN_CONFIG", "MAIN", "LINE2"});
-    UIRomList::add(line2);
-	auto *line3 = new SkinnedRectangle(pMain, {"SKIN_CONFIG", "MAIN", "LINE3"});
-    UIRomList::add(line3);
+
 }
 
 std::string UIRomList::getPreview(const Game &game, UIRomList::PreviewType type) {
