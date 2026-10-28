@@ -6,8 +6,22 @@
 
 #include <cstdio>
 
+#ifdef __SWITCH__
+#include <switch.h>
+#endif
+
 using namespace c2d;
 using namespace pemu;
+
+#ifdef __SWITCH__
+// libnx startup variable: tells libnx how to treat this process, and is
+// overridden from the loader env (EntryType_AppletType) before main runs when
+// the process is launched under a homebrew loader (e.g. applet mode from the
+// Album). Defining it is standard libnx practice.
+extern "C" {
+    u32 __nx_applet_type = AppletType_Application;
+}
+#endif
 
 PEMUUiMain *pemu_ui;
 
@@ -67,6 +81,24 @@ static void checkDonateIntegrity(C2DIo *io) {
 }
 
 int main(int argc, char **argv) {
+#ifdef __SWITCH__
+    // If the app is launched in applet mode (e.g. from the Album instead of
+    // the home menu), the UI breaks and can crash the whole Switch system.
+    // IMPORTANT: do NOT call appletInitialize() here - in applet mode opening
+    // the applet service itself triggers a system fatal error (this is what
+    // crashed on the real console). The checks below are pure memory reads:
+    //   - __nx_applet_type: libnx startup global, overridden from the loader
+    //     env (EntryType_AppletType) before main runs;
+    //   - appletGetAppletType(): cached applet type, safe to read.
+    // If either reports a non-application type, exit before any UI/renderer
+    // is created. A message box cannot be shown safely here, so just exit.
+    if (appletGetAppletType() != AppletType_Application ||
+        __nx_applet_type != AppletType_Application) {
+        printf("pfbneo: running in applet mode is not supported, exiting.\n");
+        return 0;
+    }
+#endif
+
     // command line game info
     Game game;
 
