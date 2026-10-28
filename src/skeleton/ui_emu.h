@@ -18,6 +18,16 @@ namespace pemu {
 
         virtual void resume();
 
+        // hook for core-specific extra rom-menu entries (e.g. "金手指/cheat).
+        // called by UiMenu when such an entry is confirmed; return true if
+        // the name was handled by the core.
+        virtual bool onMenuExtra(const std::string &name);
+
+        // hook for core-specific extra dialogs (e.g. the cheat dialog).
+        // UiMenu / UiEmu::onInput yield input to the dialog while this is
+        // true, so the dialog receives B/LEFT/RIGHT/UP/DOWN directly.
+        virtual bool isExtraDialogOpen() { return false; }
+
         UiMain *getUi();
 
         C2DUIVideo *getVideo();

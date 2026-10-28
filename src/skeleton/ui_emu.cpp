@@ -66,6 +66,11 @@ int UiEmu::load(const Game &game) {
     return 0;
 }
 
+bool UiEmu::onMenuExtra(const std::string &name) {
+    (void) name;
+    return false;
+}
+
 void UiEmu::pause() {
     printf("UiEmu::pause()\n");
     if (audio != nullptr) {

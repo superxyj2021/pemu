@@ -17,6 +17,16 @@ public:
 
     void stop() override;
 
+    bool onMenuExtra(const std::string &name) override;
+
+    bool isExtraDialogOpen() override;
+
+    // attach the cheat dialog to the ui tree (as the LAST object, i.e.
+    // rendered/input on top of everything). must be called once, AFTER
+    // UiMain::init() (main loop start), exactly like UiMenuState - NOT from
+    // a runtime input callback, which the c2d render traversal may skip.
+    void attachToUi();
+
 private:
 
 #ifdef __PFBA_ARM__
@@ -26,6 +36,9 @@ private:
     bool onInput(c2d::Input::Player *players) override;
 
     void onUpdate() override;
+
+    class PfbneCheatDialog *cheatDialog = nullptr;
+    bool m_dialogAttached = false;
 
     bool audio_sync = false;
 

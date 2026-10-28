@@ -3,10 +3,17 @@
 //
 
 #include "pemu.h"
+
+#include <algorithm>
 #include "ui_menu.h"
 #include "buffer.h"
 
 using namespace c2d::config;
+
+// marquee scroll tuning (same feel as the rom list)
+static const float SCROLL_HOLD_START = 0.5f;
+static const float SCROLL_HOLD_EDGE = 0.65f;
+static const float SCROLL_SPEED = 12.f;
 
 class MenuLine : public c2d::RectangleShape {
 
@@ -55,7 +62,7 @@ public:
         // this is a menu title (or custom option)
         if (!option) {
             // custom options, // === 新增: "打赏作者" 菜单项显示"执行" ===
-            if (name == TEXT_STATES || name == TEXT_QUIT || name == TEXT_MONEY2) {
+            if (name == TEXT_STATES || name == TEXT_QUIT || name == TEXT_MONEY2 || name == TEXT_CHEATS) {
                 p_value->setVisibility(Visibility::Visible);
                 p_value->setString(TEXT_GO);
                 return;
@@ -203,6 +210,9 @@ void UiMenu::load(bool isGame) {
     // add "OTHER" option menu
     menu_options.push_back({TEXT_OTHER, nullptr});
     if (isRomMenu) menu_options.push_back({TEXT_STATES, nullptr});
+    // pfbneo cheat: runtime-only, rom menu entry - only while a game is
+    // actually running (NOT in the main screen's rom menu opened with Menu2)
+    if (isRomMenu && isEmuRunning) menu_options.push_back({TEXT_CHEATS, nullptr});
     menu_options.push_back({TEXT_QUIT, nullptr});
 
     setAlpha(isEmuRunning ? (uint8_t) (alpha - 50) : (uint8_t) alpha);
@@ -218,6 +228,14 @@ void UiMenu::load(bool isGame) {
 }
 
 void UiMenu::updateLines() {
+    // reset the marquee scroll animation when the selection/list changes
+    m_scrollName.offset = 0.f;
+    m_scrollName.dir = 1;
+    m_scrollValue = m_scrollName;
+    // pause briefly before the freshly highlighted line starts scrolling
+    m_scrollName.holdUntil = m_scrollClock.getElapsedTime().asSeconds() + SCROLL_HOLD_START;
+    m_scrollValue.holdUntil = m_scrollName.holdUntil;
+
     for (unsigned int i = 0; i < (unsigned int) maxLines; i++) {
         if (optionIndex + i >= menu_options.size()) {
             lines[i]->setVisibility(Visibility::Hidden);
@@ -226,6 +244,10 @@ void UiMenu::updateLines() {
         // set line data
         auto menuOption = menu_options.at(optionIndex + i);
         lines[i]->set(menuOption.name, menuOption.option);
+        // marquee: only the highlighted line scrolls, all other lines keep
+        // the "..." truncation
+        lines[i]->p_name->setScrollEnabled((int) i == highlightIndex);
+        lines[i]->p_value->setScrollEnabled((int) i == highlightIndex);
         // set highlight position and color
         if ((int) i == highlightIndex) {
             highlight->setPosition({highlight->getPosition().x,
@@ -254,7 +276,7 @@ void UiMenu::onKeyUp() {
 
     // skip menus
     auto opt = menu_options.at(optionIndex + highlightIndex);
-    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2) {
+    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2 && opt.name != TEXT_CHEATS) {
         return onKeyUp();
     }
 
@@ -278,7 +300,7 @@ void UiMenu::onKeyDown() {
 
     // skip menus
     auto opt = menu_options.at(optionIndex + highlightIndex);
-    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2) {
+    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2 && opt.name != TEXT_CHEATS) {
         return onKeyDown();
     }
 
@@ -293,6 +315,64 @@ void UiMenu::onUpdate() {
         auto col = ui->getSkin()->getHighlightGradientColor();
         highlight->setOutlineColor(col);
     }
+
+    // marquee scroll animation for the highlighted line (bounce mode with
+    // pauses), same effect as the rom list / cheat dialog. the name (left)
+    // and value (right) column scroll INDEPENDENTLY - only the side that is
+    // too long for its column moves, the other side stays put.
+    auto advance = [](UiMenu::ScrollState &st, float elapsed, float dt, float limit) {
+        if (elapsed < st.holdUntil) {
+            return;  // pause at the start / at an edge
+        }
+        st.offset += (float) st.dir * dt * SCROLL_SPEED;
+        if (st.offset >= limit) {
+            // tail reached the right edge: pause, then bounce back right
+            st.offset = limit;
+            st.dir = -1;
+            st.holdUntil = elapsed + SCROLL_HOLD_EDGE;
+        } else if (st.offset <= 0.f) {
+            // head reached the left edge: pause, then bounce back left
+            st.offset = 0.f;
+            st.dir = 1;
+            st.holdUntil = elapsed + SCROLL_HOLD_EDGE;
+        }
+    };
+    if (!lines.empty() && highlightIndex >= 0 && highlightIndex < (int) lines.size()) {
+        auto *name = lines[highlightIndex]->p_name;
+        auto *value = lines[highlightIndex]->p_value;
+        bool nameScrolls = name && name->isScrollNeeded();
+        bool valueScrolls = value && value->isScrollNeeded();
+        if (nameScrolls || valueScrolls) {
+            float elapsed = m_scrollClock.getElapsedTime().asSeconds();
+            float dt = std::min(elapsed - m_lastScrollTime, 0.1f);
+            m_lastScrollTime = elapsed;
+
+            // name column
+            if (nameScrolls) {
+                float limit = std::max(0.f, name->getScrollFullWidth() - name->getSizeMax().x);
+                advance(m_scrollName, elapsed, dt, limit);
+                name->setScrollOffset(m_scrollName.offset);
+            } else if (name) {
+                name->setScrollOffset(0.f);
+            }
+
+            // value column (right-aligned: offset 0 = tail flush right, moving
+            // towards limit reveals the head)
+            if (valueScrolls) {
+                float limit = std::max(0.f, value->getScrollFullWidth() - value->getSizeMax().x);
+                advance(m_scrollValue, elapsed, dt, limit);
+                value->setScrollOffset(m_scrollValue.offset);
+            } else if (value) {
+                value->setScrollOffset(0.f);
+            }
+        } else {
+            // keep the clock synced so the animation starts cleanly next time
+            m_lastScrollTime = m_scrollClock.getElapsedTime().asSeconds();
+            if (name) name->setScrollOffset(0.f);
+            if (value) value->setScrollOffset(0.f);
+        }
+    }
+
     SkinnedRectangle::onUpdate();
 }
 
@@ -300,6 +380,12 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
     unsigned int buttons = players[0].buttons;
 
     if (ui->getUiStateMenu()->isVisible()) {
+        return C2DObject::onInput(players);
+    }
+
+    // extra dialogs (e.g. the pfbneo cheat dialog) are added AFTER the menu
+    // in the ui tree: while one is open, let it handle all input directly.
+    if (ui->getUiEmu() && ui->getUiEmu()->isExtraDialogOpen()) {
         return C2DObject::onInput(players);
     }
 
@@ -414,6 +500,21 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
 
     // FIRE1 (ENTER)
     if (buttons & Input::Button::A) {
+#if PEMU_ENABLE_DEBUG_LOG
+        // diagnostic: trace which menu line is selected when A is pressed
+        {
+            FILE *f = fopen("/switch/cheat_menu.log", "a");
+            if (f) {
+                fprintf(f, "UiMenu::onInput: A pressed, idx=%d name='%s' opt=%p isRom=%d isEmu=%d\n",
+                        highlightIndex,
+                        lines.at(highlightIndex)->p_name->getString().c_str(),
+                        (void *) lines.at(highlightIndex)->p_option,
+                        isRomMenu ? 1 : 0,
+                        ui->getUiEmu()->isVisible() ? 1 : 0);
+                fclose(f);
+            }
+        }
+#endif
         auto option = lines.at(highlightIndex)->p_option;
         if (option && option->getFlags() == PEMUConfig::Flags::INPUT) {
             int new_key = 0;
@@ -426,6 +527,10 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
         } else if (lines.at(highlightIndex)->p_name->getString() == TEXT_STATES) {
             setVisibility(Visibility::Hidden, true);
             ui->getUiStateMenu()->setVisibility(Visibility::Visible, true);
+        } else if (lines.at(highlightIndex)->p_name->getString() == TEXT_CHEATS) {
+            // pfbneo cheat dialog: hide the menu and let the core handle it
+            setVisibility(Visibility::Hidden, true);
+            ui->getUiEmu()->onMenuExtra(TEXT_CHEATS);
         } else if (lines.at(highlightIndex)->p_name->getString() == TEXT_QUIT) {
             if (isEmuRunning) {
                 setVisibility(Visibility::Hidden, true);

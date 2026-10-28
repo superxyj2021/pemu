@@ -291,6 +291,13 @@
 #define TEXT_MENU_KEY_MENU1                             "键盘 MENU1"
 #define TEXT_MENU_KEY_MENU2                             "键盘 MENU2"
 
+// pfbneo cheat (金手指) - runtime only, rom menu entry
+#define TEXT_CHEATS                                     "金手指"
+#define TEXT_CHEAT_DISABLED                             "禁用"
+#define TEXT_CHEAT_ENABLED                              "启用"
+#define TEXT_DIALOG_CURRENT                            "  ←"
+#define TEXT_DIALOG_EMPTY                              "该游戏没有金手指文件"
+
 // pfbneo turbo (auto-fire) options
 #define TEXT_MENU_TURBO                                 "连发设置"
 #define TEXT_MENU_TURBO_RATE                            "连发速率"

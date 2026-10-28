@@ -10,7 +10,27 @@
 #include "pfbneo_ui_video.h"
 #include "pfbneo_utility.h"
 #include "pfbneo_turbo.h"
+#include "pfbneo_ui_cheat.h"
+#include "fbneo/pfbneo_cheat.h"
 #include "retro_input_wrapper.h"
+
+// tiny helper to trace the cheat dialog (log file: /switch/cheat_emu.log,
+// controlled by the master switch PEMU_ENABLE_DEBUG_LOG in pemu.h, OFF by default)
+#if PEMU_ENABLE_DEBUG_LOG
+static void cheatLog2(const char *fmt, ...) {
+    FILE *f = fopen("/switch/cheat_emu.log", "a");
+    if (f) {
+        va_list args;
+        va_start(args, fmt);
+        vfprintf(f, fmt, args);
+        va_end(args);
+        fputc('\n', f);
+        fclose(f);
+    }
+}
+#else
+static void cheatLog2(const char *fmt, ...) { }
+#endif
 
 using namespace c2d;
 using namespace pemu;
@@ -45,6 +65,41 @@ static UiMain *uiInstance;
 PFBAUiEmu::PFBAUiEmu(UiMain *ui) : UiEmu(ui) {
     printf("PFBAUiEmu()\n");
     uiInstance = ui;
+
+    // pfbneo cheat dialog: attached as a child of the emu object itself, so
+    // it is drawn AFTER the emulated frame (on top of the game screen) and
+    // receives input through the emu subtree. The emu is hidden when no game
+    // is running, which automatically hides the dialog as well.
+    // pfbneo cheat dialog: created here, attached to the ui tree (as the
+    // LAST object, on top of everything) on first open() - see
+    // PfbneCheatDialog::open()
+    cheatDialog = new PfbneCheatDialog(ui);
+}
+
+bool PFBAUiEmu::isExtraDialogOpen() {
+    return cheatDialog && cheatDialog->isVisible();
+}
+
+void PFBAUiEmu::attachToUi() {
+    if (cheatDialog && !m_dialogAttached) {
+        pMain->add(cheatDialog);
+        m_dialogAttached = true;
+        cheatLog2("attachToUi: dialog attached to ui tree, dialogPtr=%p", (void *) cheatDialog);
+    }
+}
+
+bool PFBAUiEmu::onMenuExtra(const std::string &name) {
+    if (name == TEXT_CHEATS) {
+        // rom menu -> 金手指: open the cheat dialog (game is running)
+        if (cheatDialog) {
+            cheatLog2("onMenuExtra: opening cheat dialog");
+            cheatDialog->open();
+        } else {
+            cheatLog2("onMenuExtra: cheatDialog is NULL!");
+        }
+        return true;
+    }
+    return false;
 }
 
 #ifdef __PFBA_ARM__
@@ -226,6 +281,10 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
     // pfbneo turbo: reset counters + log game start
     pfbneo_turbo::onGameStart();
 
+    // pfbneo cheat: parse cheats/<rom>.ini and rebuild the core list.
+    // runtime-only: nothing is persisted, all cheats start inactive.
+    pfbneo_cheat::load(game, pMain->getIo());
+
     return UiEmu::load(game);
 }
 
@@ -249,6 +308,12 @@ void ReinitialiseVideo()
 void PFBAUiEmu::stop() {
     // pfbneo turbo: log game stop and clear runtime state
     pfbneo_turbo::onGameStop();
+    // pfbneo cheat: clear runtime state (the core's CheatExit() already
+    // freed the pCheatInfo list during DrvExit); hide the dialog if open
+    if (cheatDialog) {
+        cheatDialog->setVisibility(Visibility::Hidden, true);
+    }
+    pfbneo_cheat::reset();
     DrvExit();
     if (pBurnSoundOut) {
         free(pBurnSoundOut);
@@ -260,6 +325,12 @@ bool PFBAUiEmu::onInput(c2d::Input::Player *players) {
     if (pMain->getUiMenu()->isVisible() || pMain->getUiStateMenu()->isVisible()) {
         pMain->getInput()->setRotation(Input::Rotation::R0, Input::Rotation::R0);
         return UiEmu::onInput(players);
+    }
+
+    // pfbneo cheat dialog: while it is open, let the dialog (added after the
+    // emu in the ui tree) handle all input instead of the running game
+    if (cheatDialog && cheatDialog->isVisible()) {
+        return false;
     }
 
     // rotation config:

@@ -70,6 +70,19 @@ namespace pemu {
         c2d::Texture *pDonateImage = nullptr;
 		bool m_showingDonate = false;
 		c2d::RectangleShape *pBlur = nullptr;
+
+        // marquee scroll state for the highlighted line.
+        // the line's name (left) and value (right) column scroll
+        // INDEPENDENTLY: only the side that is too long moves.
+        struct ScrollState {
+            float offset = 0.f;
+            int dir = 1;
+            float holdUntil = 0.f;
+        };
+        c2d::C2DClock m_scrollClock;
+        ScrollState m_scrollName;
+        ScrollState m_scrollValue;
+        float m_lastScrollTime = 0.f;
     };
 }
 

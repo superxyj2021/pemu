@@ -71,6 +71,12 @@ int main(int argc, char **argv) {
     const auto uiState = new PEMUUiMenuState(pemu_ui);
     pemu_ui->init(uiRomList, uiMenu, uiEmu, uiState);
 
+    // pfbneo cheat dialog: attach to the ui tree right after init, exactly
+    // like the other widgets (UiMenuState etc). attaching at runtime (from an
+    // input callback) can be skipped by the c2d render traversal, which is why
+    // the dialog was never drawn.
+    uiEmu->attachToUi();
+
     // load specified game from command line if requested
     if (!game.path.empty()) {
         uiRomList->setVisibility(Visibility::Hidden);

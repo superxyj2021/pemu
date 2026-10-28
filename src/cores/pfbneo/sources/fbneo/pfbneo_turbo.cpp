@@ -78,7 +78,9 @@ namespace pfbneo_turbo {
 
     // ---------------------------------------------------------------------------
     // logging (writes to /switch/turbo_debug.log on the sd card)
+    // controlled by the master switch PEMU_ENABLE_DEBUG_LOG (pemu.h), OFF by default
     // ---------------------------------------------------------------------------
+#if PEMU_ENABLE_DEBUG_LOG
     void turboLog(const char *fmt, ...) {
         va_list args;
 
@@ -100,6 +102,9 @@ namespace pfbneo_turbo {
         printf("\n");
         fflush(stdout);
     }
+#else
+    void turboLog(const char *fmt, ...) { }
+#endif
 
     // ---------------------------------------------------------------------------
     // helpers
