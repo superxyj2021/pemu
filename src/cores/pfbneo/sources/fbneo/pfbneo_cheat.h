@@ -38,10 +38,25 @@ namespace ss_api {
 
 namespace pfbneo_cheat {
 
+    // where the cheats of the current game actually came from. lookup order:
+    //   own ini > own dat (plus parent dat in the same single pass) > parent ini
+    enum class CheatSource {
+        None,       // no cheat file found at all
+        Ini,        // own <drvname>.ini
+        Dat,        // own section inside the shared .dat database
+        ParentIni,  // parent (clone of) rom's <parent>.ini
+        ParentDat   // parent rom's section inside the shared .dat database
+    };
+
     // parse <cheats>/<rom>.ini and rebuild the core pCheatInfo list.
     // MUST be called AFTER BurnDrvInit() (cpu registers are registered then;
     // the core frees pCheatInfo in CheatExit() when the driver exits).
     void load(const ss_api::Game &game, c2d::Io *io);
+
+    // which source the loaded cheats came from (filled by load(); used by the
+    // dialog to annotate the title when cheats were inherited from the parent)
+    CheatSource getSource();
+    const std::string &getSourceRom();
 
     // select one option of a cheat (dialog): apply immediately to the running
     // emulation. runtime-only, no cfg persistence.

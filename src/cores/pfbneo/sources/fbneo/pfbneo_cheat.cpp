@@ -14,6 +14,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <cstdarg>
+#include <utility>
 
 namespace pfbneo_cheat {
 
@@ -46,6 +47,10 @@ namespace pfbneo_cheat {
 
     static std::vector<PfbCheat> s_cheats;
     static bool s_logEnabled = true;
+
+    // where the current game's cheats came from (see CheatSource in the header)
+    static CheatSource g_source = CheatSource::None;
+    static std::string g_sourceRom;
 
     // ---- logging (write to /switch/cheat_debug.log; controlled by the
     //      master switch PEMU_ENABLE_DEBUG_LOG in pemu.h, OFF by default) ---
@@ -290,19 +295,210 @@ namespace pfbneo_cheat {
         return true;
     }
 
-    static bool loadMameFile(const std::string &path, const std::string &romName) {
+    // per-rom parsing context used while scanning a mame-style database file.
+    // two contexts (own rom + parent rom) are filled in ONE single pass so a
+    // big database is never scanned twice when the own rom has no entry.
+    struct MameCtx {
+        std::vector<PfbCheat> cheats;   // cheats parsed in this section
+        PfbCheat *current = nullptr;    // cheat currently being filled
+        bool menu = false;              // current cheat takes options on 0x10000 lines
+        int n = 0;                      // option index inside the current cheat
+        bool loaded = false;            // at least one real cheat parsed
+        bool found = false;             // the ":<rom>:" section was seen at all
+        bool active = false;            // currently inside this section
+    };
+
+    // parse one entry line into a section context. flag interpretation is the
+    // FBA one documented in the header comment above.
+    static void mameParseLine(MameCtx &c, const char *line) {
+        unsigned int flags = 0, address = 0, value = 0, attrib = 0;
+        std::string entryName;
+        std::string addrRaw;
+        if (!parseMameEntry(line, flags, address, value, attrib, entryName, addrRaw)) {
+            return;  // malformed line
+        }
+
+        // NES/SNES: the FBNeo frontend keeps the whole address field as a
+        // Game Genie / PAR code string (hex-looking 8-char codes are PAR,
+        // "XXXX-XXXX" and 6/8-char codes are Game Genie), and the NES/SNES
+        // core decodes them via the nes_add_cheat() hook. zero/empty fields
+        // mean "menu only" entries and get no code.
+        std::string genie;
+        if (HW_GGENIE) {
+            if (!addrRaw.empty() && addrRaw != "0" && addrRaw != "0000"
+                && addrRaw != "00000000") {
+                genie = addrRaw;
+            }
+        } else if (!isHexString(addrRaw)) {
+            return;  // arcade entry with a non-hex address: skip
+        }
+
+        if (flags & 0x00004800) {
+            return;  // unsupported cheat methods
+        }
+
+        if ((flags & 0x00008000) || ((flags & 0x00010000) && !c.menu)) {
+            // linked line: adds an address group to the current option
+            if (c.current && c.n >= 0 && c.n < (int) c.current->optionAddresses.size()) {
+                CheatAddr a;
+                a.cpu = 0;  // FBA derives the cpu from flags >> 24; the
+                            // common databases use cpu 0 for arcade writes
+                a.address = address;
+                a.value = value;
+                a.genie = genie;
+                c.current->optionAddresses[c.n].push_back(a);
+            }
+            return;
+        }
+
+        if (~flags & 0x00010000) {
+            // ---- new cheat (or merge with the previous same-address entry)
+
+            // the FBA frontend treats every plain line as a new cheat, but many
+            // databases (e.g. captcommjr1 weapon/character select) list the
+            // options of ONE selectable cheat as consecutive lines that share
+            // the SAME address with different values. merge those into a single
+            // multi-option cheat (address stays identical, each value becomes
+            // one option) - matching what the database author intended. lines
+            // with the 0x100 "add options" flag are excluded: they are their
+            // own auto-generated option series (e.g. puzznic 0x101/0x103).
+            if (!c.cheats.empty() && c.current && address
+                && !(flags & 0x00004800) && !(flags & 0x00000100)) {
+                PfbCheat &prev = c.cheats.back();
+                // prev must be a regular cheat (has a real address option):
+                // a menu cheat only has option 0 (Disabled, empty) and takes
+                // its options on :0x10000: lines instead.
+                if (prev.optionAddresses.size() >= 2
+                    && !prev.optionAddresses[1].empty()
+                    && prev.optionAddresses[1][0].address == address
+                    && !entryName.empty()) {
+                    // the first option currently carries the generic "启用"
+                    // label; in a merged selection list it should show the
+                    // first line's own description (like the FBA frontend),
+                    // e.g. 选关: 关卡 1 / 关卡 2 / ... instead of 启用/关卡 2
+                    if (prev.optionNames.size() >= 2
+                        && prev.optionNames[1] == TEXT_CHEAT_ENABLED) {
+                        prev.optionNames[1] = prev.name;
+                    }
+                    c.n = (int) prev.optionNames.size();
+                    prev.optionNames.push_back(entryName);
+                    std::vector<CheatAddr> addrs;
+                    CheatAddr a;
+                    a.cpu = 0;
+                    a.address = address;
+                    a.value = value;
+                    a.genie = genie;
+                    addrs.push_back(a);
+                    prev.optionAddresses.push_back(addrs);
+                    c.current = &prev;
+                    return;
+                }
+            }
+
+            // ---- new cheat
+            c.n = 0;
+            c.menu = false;
+            c.cheats.push_back(PfbCheat());
+            c.current = &c.cheats.back();
+            // keep the description as-is: an empty description must stay an
+            // empty row in the dialog (no "Cheat" placeholder)
+            c.current->name = entryName;
+
+            // like the FBNeo frontend (src/burner/conc.cpp): a database entry
+            // with an empty description OR with flags == 0x60000000 is a
+            // HEADER / comment line, not a real cheat. it gets NO options, so
+            // the dialog shows it as an unselectable (bold) title row; an
+            // empty name keeps the row empty.
+            if (entryName.empty() || flags == 0x60000000) {
+                c.loaded = true;
+                return;
+            }
+
+            // option 0: always "禁用" (Disabled, no address). entries from
+            // the mame databases uniformly show 禁用/启用 (+ any extra
+            // real options the file defines, e.g. "# 1..# N").
+            c.current->optionNames.push_back(TEXT_CHEAT_DISABLED);
+            c.current->optionAddresses.emplace_back();
+            c.loaded = true;
+
+            if (address || !genie.empty()) {
+                if (flags & 0x100) {
+                    // "add options": generate "# 1..# N" options
+                    unsigned int total = value + 1;
+                    if (total > 0xff) {
+                        total = 0xff;
+                    }
+                    for (unsigned int v = 0; v < total; v++) {
+                        char tmp[32];
+                        snprintf(tmp, sizeof(tmp), "# %d.", v + 1);
+                        c.n++;
+                        c.current->optionNames.push_back(tmp);
+                        std::vector<CheatAddr> addrs;
+                        CheatAddr a;
+                        a.cpu = 0;
+                        a.address = address;
+                        a.value = v;
+                        a.genie = genie;
+                        addrs.push_back(a);
+                        c.current->optionAddresses.push_back(addrs);
+                    }
+                } else {
+                    // main option: name = "启用" (Enable), address = this
+                    // line (the file's entry name is the cheat name, so
+                    // using it for the option just duplicates the title).
+                    c.n++;
+                    c.current->optionNames.push_back(TEXT_CHEAT_ENABLED);
+                    std::vector<CheatAddr> addrs;
+                    CheatAddr a;
+                    a.cpu = 0;
+                    a.address = address;
+                    a.value = value;
+                    a.genie = genie;
+                    addrs.push_back(a);
+                    c.current->optionAddresses.push_back(addrs);
+                }
+            } else {
+                c.menu = true;  // options come on following :0x10000: lines
+            }
+            return;
+        }
+
+        // flags & 0x10000 && menu -> new option of the current cheat
+        if ((flags & 0x00010000) && c.menu && c.current) {
+            c.n++;
+            c.current->optionNames.push_back(entryName.empty() ? "Option" : entryName);
+            std::vector<CheatAddr> addrs;
+            CheatAddr a;
+            a.cpu = 0;
+            a.address = address;
+            a.value = value;
+            a.genie = genie;
+            addrs.push_back(a);
+            c.current->optionAddresses.push_back(addrs);
+        }
+    }
+
+    // parent-rom cheats parsed from a database, kept aside until the parent
+    // .ini lookup (which has HIGHER priority than the parent dat) is done.
+    static std::vector<PfbCheat> s_datParentCheats;
+
+    // load a mame-style .dat database in ONE single pass for both the own rom
+    // and (optionally) its parent rom. own-rom cheats are committed into
+    // s_cheats immediately; parent-rom cheats go into s_datParentCheats for
+    // the caller to commit only if the parent .ini also misses.
+    // returns: 0 = nothing, 1 = own rom section, 2 = parent rom section.
+    static int loadMameFile(const std::string &path, const std::string &romName,
+                            const std::string &parentName) {
         FILE *f = fopen(path.c_str(), "rt");
         if (!f) {
-            return false;
+            return 0;
         }
 
         char line[2048];
-        bool found = false;
-        PfbCheat *current = nullptr;
-        bool menu = false;    // current cheat has no direct address on its first line
-        int n = 0;            // option index being filled for the current cheat
-        std::string gName = ":" + romName + ":";
-        bool loaded = false;
+        MameCtx own;
+        MameCtx par;
+        std::string gOwn = ":" + romName + ":";
+        std::string gPar = parentName.empty() ? std::string() : (":" + parentName + ":");
 
         while (fgets(line, sizeof(line), f)) {
             std::string trimmed = trim(line);
@@ -312,139 +508,44 @@ namespace pfbneo_cheat {
             if (trimmed[0] == ';') {
                 continue;
             }
-
-            // match every entry line by prefix ":<romname>:"
-            if (trimmed.compare(0, gName.size(), gName) != 0) {
-                if (found) {
-                    break;  // this rom's section ended
-                }
-                continue;   // not reached this rom's entries yet
-            }
             if (trimmed.find("----:REASON") != std::string::npos) {
                 break;  // end of the database file
             }
-            found = true;
-            loaded = true;
 
-            // cheat entry line
-            unsigned int flags = 0, address = 0, value = 0, attrib = 0;
-            std::string entryName;
-            std::string addrRaw;
-            if (!parseMameEntry(line, flags, address, value, attrib, entryName, addrRaw)) {
-                continue;  // malformed line
-            }
-
-            // NES/SNES: the FBNeo frontend keeps the whole address field as a
-            // Game Genie / PAR code string (hex-looking 8-char codes are PAR,
-            // "XXXX-XXXX" and 6/8-char codes are Game Genie), and the NES/SNES
-            // core decodes them via the nes_add_cheat() hook. zero/empty
-            // fields mean "menu only" entries and get no code.
-            std::string genie;
-            if (HW_GGENIE) {
-                if (!addrRaw.empty() && addrRaw != "0" && addrRaw != "0000"
-                    && addrRaw != "00000000") {
-                    genie = addrRaw;
+            bool mOwn = trimmed.compare(0, gOwn.size(), gOwn) == 0;
+            bool mPar = !gPar.empty() && trimmed.compare(0, gPar.size(), gPar) == 0;
+            if (mOwn) {
+                own.found = true;
+                own.active = true;
+                par.active = false;
+                mameParseLine(own, line);
+            } else if (mPar) {
+                par.found = true;
+                par.active = true;
+                own.active = false;
+                mameParseLine(par, line);
+            } else {
+                // a line of another rom ends whatever section was active; once
+                // both target sections are over, later lines are irrelevant
+                own.active = false;
+                par.active = false;
+                if (own.found && par.found) {
+                    break;
                 }
-            } else if (!isHexString(addrRaw)) {
-                continue;  // arcade entry with a non-hex address: skip
             }
-
-            if (flags & 0x00004800) {
-                continue;  // unsupported cheat methods
-            }
-
-            if ((flags & 0x00008000) || ((flags & 0x00010000) && !menu)) {
-                // linked line: adds an address group to the current option
-                if (current && n >= 0 && n < (int) current->optionAddresses.size()) {
-                    CheatAddr a;
-                    a.cpu = 0;  // FBA derives the cpu from flags >> 24; the
-                                // common databases use cpu 0 for arcade writes
-                    a.address = address;
-                    a.value = value;
-                    a.genie = genie;
-                    current->optionAddresses[n].push_back(a);
-                }
-                continue;
-            }
-
-            if (~flags & 0x00010000) {
-                // ---- new cheat
-                n = 0;
-                menu = false;
-                s_cheats.push_back(PfbCheat());
-                current = &s_cheats.back();
-                current->name = entryName.empty() ? "Cheat" : entryName;
-                // option 0: Disabled (no address)
-                // option 0: always "禁用" (Disabled, no address). entries from
-                // the mame databases uniformly show 禁用/启用 (+ any extra
-                // real options the file defines, e.g. "# 1..# N").
-                current->optionNames.push_back(TEXT_CHEAT_DISABLED);
-                current->optionAddresses.emplace_back();
-                loaded = true;
-
-                if (address || !genie.empty()) {
-                    if (flags & 0x100) {
-                        // "add options": generate "# 1..# N" options
-                        unsigned int total = value + 1;
-                        if (total > 0xff) {
-                            total = 0xff;
-                        }
-                        for (unsigned int v = 0; v < total; v++) {
-                            char tmp[32];
-                            snprintf(tmp, sizeof(tmp), "# %d.", v + 1);
-                            n++;
-                            current->optionNames.push_back(tmp);
-                            std::vector<CheatAddr> addrs;
-                            CheatAddr a;
-                            a.cpu = 0;
-                            a.address = address;
-                            a.value = v;
-                            a.genie = genie;
-                            addrs.push_back(a);
-                            current->optionAddresses.push_back(addrs);
-                        }
-                    } else {
-                        // main option: name = "启用" (Enable), address = this
-                        // line (the file's entry name is the cheat name, so
-                        // using it for the option just duplicates the title).
-                        n++;
-                        current->optionNames.push_back(TEXT_CHEAT_ENABLED);
-                        std::vector<CheatAddr> addrs;
-                        CheatAddr a;
-                        a.cpu = 0;
-                        a.address = address;
-                        a.value = value;
-                        a.genie = genie;
-                        addrs.push_back(a);
-                        current->optionAddresses.push_back(addrs);
-                    }
-                } else {
-                    menu = true;  // options come on following :0x10000: lines
-                }
-                continue;
-            }
-
-            // flags & 0x10000 && menu -> new option of the current cheat
-            if ((flags & 0x00010000) && menu && current) {
-                n++;
-                current->optionNames.push_back(
-                    entryName.empty() ? "Option" : entryName);
-                std::vector<CheatAddr> addrs;
-                CheatAddr a;
-                a.cpu = 0;
-                a.address = address;
-                a.value = value;
-                a.genie = genie;
-                addrs.push_back(a);
-                current->optionAddresses.push_back(addrs);
-                continue;
-            }
-
-            // anything else inside the section is ignored
         }
-
         fclose(f);
-        return loaded;
+
+        // own rom section takes priority; parent section is only a fallback
+        if (own.loaded) {
+            s_cheats.insert(s_cheats.end(), own.cheats.begin(), own.cheats.end());
+            return 1;
+        }
+        if (par.loaded) {
+            s_datParentCheats = std::move(par.cheats);
+            return 2;
+        }
+        return 0;
     }
 
     // ---- core list ----------------------------------------------------------
@@ -537,50 +638,73 @@ namespace pfbneo_cheat {
         // files use the driver name as well, so match both when they differ.
         std::string drvName = BurnDrvGetTextA(DRV_NAME);
 
-        cheatLog("=== pfbneo cheat load (v3): %s (zip=%s, drv=%s) ===",
-                 game.path.c_str(), zipName.c_str(), drvName.c_str());
-
-        bool any = false;
-
-        // 1) per-rom FBA ini FIRST (driver name first, zip name as fallback).
-        //    when a per-rom ini with cheats exists it TAKES PRIORITY and the
-        //    global mame databases are skipped entirely (no double entries).
-        if (!dir.empty()) {
-            if (loadIniFile(dir + drvName + ".ini")) {
-                any = true;
-                cheatLog("  ini cheat found (%s.ini), skipping mame databases",
-                         drvName.c_str());
-            } else {
-                cheatLog("  no ini: %s%s.ini", dir.c_str(), drvName.c_str());
-            }
+        // parent (clone of) driver: when the own rom has no cheat file the
+        // same lookup is repeated against the parent driver (e.g. wofj -> wof)
+        std::string parentName = BurnDrvGetTextA(DRV_PARENT);
+        if (parentName.empty() || parentName == drvName) {
+            parentName.clear();
         }
 
-        // 2) global mame-style databases, only when there is no per-rom ini:
-        //    arcade -> cheat.dat (+ wayder_cheat.dat), NES/FC -> cheatnes.dat,
-        //    SNES -> cheatsnes.dat
-        if (!any) {
+        cheatLog("=== pfbneo cheat load (v4): %s (zip=%s, drv=%s, parent=%s) ===",
+                 game.path.c_str(), zipName.c_str(), drvName.c_str(),
+                 parentName.empty() ? "-" : parentName.c_str());
+
+        // source bookkeeping for the dialog title
+        g_source = CheatSource::None;
+        g_sourceRom.clear();
+        s_datParentCheats.clear();
+
+        // lookup order: own ini > own dat > parent ini > parent dat. the own
+        // dat and the parent dat share ONE database file, so both sections are
+        // scanned in a single pass (own section committed immediately; the
+        // parent section is kept aside until the parent ini lookup, which has
+        // HIGHER priority, has also been tried).
+        if (!dir.empty() && loadIniFile(dir + drvName + ".ini")) {
+            g_source = CheatSource::Ini;
+            g_sourceRom = drvName;
+            cheatLog("  ini cheat found (%s.ini)", drvName.c_str());
+        } else {
+            int r = 0;
             if (HW_GGENIE) {
                 std::string db = HW_NES ? "cheatnes.dat" : "cheatsnes.dat";
-                if (loadMameFile(dir + db, drvName)) {
-                    any = true;
-                } else {
-                    cheatLog("  no mame db: %s%s", dir.c_str(), db.c_str());
-                }
+                r = loadMameFile(dir + db, drvName, parentName);
             } else {
-                if (loadMameFile(dir + "cheat.dat", drvName)) {
-                    any = true;
-                } else {
-                    cheatLog("  no mame db: %scheat.dat", dir.c_str());
+                r = loadMameFile(dir + "cheat.dat", drvName, parentName);
+                if (r == 0) {
+                    r = loadMameFile(dir + "wayder_cheat.dat", drvName, parentName);
                 }
-                if (loadMameFile(dir + "wayder_cheat.dat", drvName)) {
-                    any = true;
+            }
+            if (r == 1) {
+                g_source = CheatSource::Dat;
+                g_sourceRom = drvName;
+                cheatLog("  dat cheat found (%s section)", drvName.c_str());
+            } else if (r == 2) {
+                // parent dat hit - but the parent ini has higher priority
+                if (!dir.empty() && !parentName.empty()
+                    && loadIniFile(dir + parentName + ".ini")) {
+                    g_source = CheatSource::ParentIni;
+                    g_sourceRom = parentName;
+                    cheatLog("  PARENT ini cheat found (%s.ini)", parentName.c_str());
+                    s_datParentCheats.clear();
                 } else {
-                    cheatLog("  no mame db: %swayder_cheat.dat", dir.c_str());
+                    s_cheats.insert(s_cheats.end(), s_datParentCheats.begin(),
+                                    s_datParentCheats.end());
+                    g_source = CheatSource::ParentDat;
+                    g_sourceRom = parentName;
+                    cheatLog("  dat cheat found in PARENT (%s) section",
+                             parentName.c_str());
                 }
+            } else if (!dir.empty() && !parentName.empty()
+                       && loadIniFile(dir + parentName + ".ini")) {
+                g_source = CheatSource::ParentIni;
+                g_sourceRom = parentName;
+                cheatLog("  PARENT ini cheat found (%s.ini)", parentName.c_str());
+            } else {
+                cheatLog("  no ini/dat cheat found for this game");
             }
         }
 
-        if (!any) {
+        if (g_source == CheatSource::None) {
             cheatLog("  no cheat file found for this game");
             return;
         }
@@ -622,6 +746,14 @@ namespace pfbneo_cheat {
     }
 
     // ---- dialog accessors ----------------------------------------------------
+
+    CheatSource getSource() {
+        return g_source;
+    }
+
+    const std::string &getSourceRom() {
+        return g_sourceRom;
+    }
 
     int getCheatCount() {
         return (int) s_cheats.size();

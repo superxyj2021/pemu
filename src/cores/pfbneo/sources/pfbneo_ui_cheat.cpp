@@ -79,10 +79,10 @@ PfbneCheatDialog::PfbneCheatDialog(UiMain *main) : SkinnedRectangle(main, {"STAT
     highlight->setVisibility(Visibility::Hidden);
 
     // rows: one per cheat, cheat name (left) + current option value (right),
-    // SAME text setup as the UiMenu lines (OPTIONS_MENU > ITEMS_TEXT group:
-    // font, character size, color, outline) so the dialog rows look exactly
-    // like the menu items (no extra boldness).
-    auto textGroup = ui->getSkin()->getText({"OPTIONS_MENU", "ITEMS_TEXT"});
+    // item text setup comes from the states menu item group
+    // (STATES_MENU > STATES_ITEM > STATES_TEXT) in config.cfg: character
+    // size, colors and outline all track the skin configuration.
+    auto textGroup = ui->getSkin()->getText({"STATES_MENU", "STATES_ITEM", "STATES_TEXT"});
     Font *font = ui->getSkin()->getFont();
     lineHeight = (float) textGroup.size + (2 * ui->getScaling().y);
     // fill the box: rows start below the title (ROWS_TOP_Y) and extend down to
@@ -204,7 +204,16 @@ bool PfbneCheatDialog::isSelectable(int cheatIndex) {
 }
 
 void PfbneCheatDialog::updateLines() {
-    title->setString(TEXT_CHEATS);
+    // when the cheats were inherited from the parent (clone of) rom, say so
+    // in the title so the user knows where the list came from
+    auto src = pfbneo_cheat::getSource();
+    if (src == pfbneo_cheat::CheatSource::ParentIni
+        || src == pfbneo_cheat::CheatSource::ParentDat) {
+        title->setString(std::string(TEXT_CHEATS) + "（来自父ROM："
+                         + pfbneo_cheat::getSourceRom() + "）");
+    } else {
+        title->setString(TEXT_CHEATS);
+    }
 
     // reset the marquee scroll animation when the selection/list changes
     m_scrollName.offset = 0.f;
