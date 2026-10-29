@@ -146,9 +146,17 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
         if (font && !allText.empty()) {
             // ROM_LIST > TEXT (rom 行文本，主场景)
             font->precacheText(allText, text->getCharacterSize(), false, 0.f);
-            // ROM_INFOS 信息面板 (size = 20) 与 ROM_LIST 标题 (size = 36)
-            font->precacheText(allText, 20, false, 0.f);
-            font->precacheText(allText, 36, false, 0.f);
+            // ROM_INFOS 信息面板与 ROM_LIST 标题的字号都从 skin 配置动态
+            // 读取（getText 返回的 size 已含皮肤缩放），避免硬编码与配置
+            // 不同步（缺配置时 size 为 0，跳过即可）
+            auto infoSize = ui->getSkin()->getText({"ROM_INFOS", "SYSTEM_TEXT"}).size;
+            auto titleSize = ui->getSkin()->getText({"ROM_LIST", "SYSTEM_TEXT"}).size;
+            if (infoSize > 0) {
+                font->precacheText(allText, infoSize, false, 0.f);
+            }
+            if (titleSize > 0) {
+                font->precacheText(allText, titleSize, false, 0.f);
+            }
         }
     }
 

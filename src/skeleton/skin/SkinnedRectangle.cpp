@@ -38,6 +38,8 @@ bool SkinnedRectangle::load() {
                     printf("SkinnedRectangle::load: %s\n", texPath.c_str());
                     pTex = new C2DTexture(texPath);
                     if (pTex->available) {
+						pTex->setOrigin(Origin::Center);
+						pTex->setPosition(Vector2f(getSize().x / 2, getSize().y / 2));
                         // set texture ratio
                         float scaling = std::min(
                                 getSize().x / pTex->getSize().x,

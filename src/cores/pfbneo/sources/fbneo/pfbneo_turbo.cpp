@@ -39,21 +39,21 @@ namespace pfbneo_turbo {
         RETRO_DEVICE_ID_JOYPAD_B,   // 1: B
         RETRO_DEVICE_ID_JOYPAD_X,   // 2: X
         RETRO_DEVICE_ID_JOYPAD_Y,   // 3: Y
-        RETRO_DEVICE_ID_JOYPAD_L2,  // 4: LB
-        RETRO_DEVICE_ID_JOYPAD_R2,  // 5: RB
-        RETRO_DEVICE_ID_JOYPAD_L,   // 6: LT
-        RETRO_DEVICE_ID_JOYPAD_R    // 7: RT
+        RETRO_DEVICE_ID_JOYPAD_L,   // 4: LT
+        RETRO_DEVICE_ID_JOYPAD_R,   // 5: RT
+        RETRO_DEVICE_ID_JOYPAD_L2,  // 6: LB
+        RETRO_DEVICE_ID_JOYPAD_R2   // 7: RB
     };
 
     static const char *s_slotNames[TURBO_BUTTON_COUNT] = {
         "TURBO_A", "TURBO_B", "TURBO_X", "TURBO_Y",
-        "TURBO_LB", "TURBO_RB", "TURBO_LT", "TURBO_RT"
+        "TURBO_LT", "TURBO_RT", "TURBO_LB", "TURBO_RB"
     };
 
     // display names come from ui_text_def.h (Chinese on switch builds)
     static const char *s_slotDisplayNames[TURBO_BUTTON_COUNT] = {
         TEXT_MENU_TURBO_A, TEXT_MENU_TURBO_B, TEXT_MENU_TURBO_X, TEXT_MENU_TURBO_Y,
-        TEXT_MENU_TURBO_LB, TEXT_MENU_TURBO_RB, TEXT_MENU_TURBO_LT, TEXT_MENU_TURBO_RT
+        TEXT_MENU_TURBO_LT, TEXT_MENU_TURBO_RT, TEXT_MENU_TURBO_LB, TEXT_MENU_TURBO_RB
     };
 
     // 6 rate levels: [period_frames, on_frames]
@@ -62,7 +62,7 @@ namespace pfbneo_turbo {
     static const char *s_rateNames[TURBO_RATE_COUNT] = {
         "4Hz", "5Hz", "8Hz", "10Hz", "15Hz", "30Hz"
     };
-    static const int s_rateDefaultIndex = 4; // 15Hz
+    static const int s_rateDefaultIndex = 2; // 15Hz
 
     static c2d::config::Config *s_gameConfig = nullptr;
 

@@ -67,24 +67,24 @@ PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(rende
     PEMUConfig::load();
 
     // add custom rom path 
-    addRomPath("ARCADE", io->getDataPath() + "arcade/", {HARDWARE_PREFIX_ARCADE, 0, "Arcade"});
+    addRomPath("ARCADE", io->getDataPath() + "roms/arcade/", {HARDWARE_PREFIX_ARCADE, 0, "Arcade"});
 #ifndef __PFBN_LIGHT__
-    addRomPath("channelf", io->getDataPath() + "channelf/", {HARDWARE_PREFIX_CHANNELF, 0, "Fairchild Channel F"});
-    addRomPath("coleco", io->getDataPath() + "coleco/", {HARDWARE_PREFIX_COLECO, 0, "ColecoVision"});
-    addRomPath("fds", io->getDataPath() + "fds/", {HARDWARE_PREFIX_FDS, 0, "Famicom Disk System"});
-    addRomPath("gamegear", io->getDataPath() + "gamegear/", {HARDWARE_PREFIX_SEGA_GAME_GEAR, 0, "Sega Game Gear"});
-    addRomPath("megadrive", io->getDataPath() + "megadrive/", {HARDWARE_PREFIX_SEGA_MEGADRIVE, 0, "Sega Mega Drive"});
-    addRomPath("msx", io->getDataPath() + "msx/", {HARDWARE_PREFIX_MSX, 0, "MSX"});
-    addRomPath("nes", io->getDataPath() + "nes/", {HARDWARE_PREFIX_NES, 0, "Nintendo Entertainment System"});
-    addRomPath("ngp", io->getDataPath() + "ngp/", {HARDWARE_PREFIX_NGP, 0, "Neo Geo Pocket"});
-    addRomPath("pce", io->getDataPath() + "pce/", {HARDWARE_PCENGINE_PCENGINE, 0, "PC Engine"});
-    addRomPath("sg1000", io->getDataPath() + "sg1000/", {HARDWARE_PREFIX_SEGA_SG1000, 0, "Sega SG-1000"});
-    addRomPath("sgx", io->getDataPath() + "sgx/", {HARDWARE_PCENGINE_SGX, 0, "PC Engine SuperGrafx"});
-    addRomPath("sms", io->getDataPath() + "sms/", {HARDWARE_PREFIX_SEGA_MASTER_SYSTEM, 0, "Sega Master System"});
-    addRomPath("spectrum", io->getDataPath() + "spectrum/", {HARDWARE_PREFIX_SPECTRUM, 0, "ZX Spectrum"});
-    addRomPath("tg16", io->getDataPath() + "tg16/", {HARDWARE_PCENGINE_TG16, 0, "PC Engine TurboGrafx-16"});
-    addRomPath("snes", io->getDataPath() + "snes/", {HARDWARE_PREFIX_SNES, 0, "Super Nintendo Entertainment System"});
-    addRomPath("gba", io->getDataPath() + "gba/", {HARDWARE_PREFIX_GBA, 0, "Game Boy Advance"});	
+    addRomPath("channelf", io->getDataPath() + "roms/channelf/", {HARDWARE_PREFIX_CHANNELF, 0, "Fairchild Channel F"});
+    addRomPath("coleco", io->getDataPath() + "roms/coleco/", {HARDWARE_PREFIX_COLECO, 0, "ColecoVision"});
+    addRomPath("fds", io->getDataPath() + "roms/fds/", {HARDWARE_PREFIX_FDS, 0, "Famicom Disk System"});
+    addRomPath("gamegear", io->getDataPath() + "roms/gamegear/", {HARDWARE_PREFIX_SEGA_GAME_GEAR, 0, "Sega Game Gear"});
+    addRomPath("megadrive", io->getDataPath() + "roms/megadrive/", {HARDWARE_PREFIX_SEGA_MEGADRIVE, 0, "Sega Mega Drive"});
+    addRomPath("msx", io->getDataPath() + "roms/msx/", {HARDWARE_PREFIX_MSX, 0, "MSX"});
+    addRomPath("nes", io->getDataPath() + "roms/nes/", {HARDWARE_PREFIX_NES, 0, "Nintendo Entertainment System"});
+    addRomPath("ngp", io->getDataPath() + "roms/ngp/", {HARDWARE_PREFIX_NGP, 0, "Neo Geo Pocket"});
+    addRomPath("pce", io->getDataPath() + "roms/pce/", {HARDWARE_PCENGINE_PCENGINE, 0, "PC Engine"});
+    addRomPath("sg1000", io->getDataPath() + "roms/sg1000/", {HARDWARE_PREFIX_SEGA_SG1000, 0, "Sega SG-1000"});
+    addRomPath("sgx", io->getDataPath() + "roms/sgx/", {HARDWARE_PCENGINE_SGX, 0, "PC Engine SuperGrafx"});
+    addRomPath("sms", io->getDataPath() + "roms/sms/", {HARDWARE_PREFIX_SEGA_MASTER_SYSTEM, 0, "Sega Master System"});
+    addRomPath("spectrum", io->getDataPath() + "roms/spectrum/", {HARDWARE_PREFIX_SPECTRUM, 0, "ZX Spectrum"});
+    addRomPath("tg16", io->getDataPath() + "roms/tg16/", {HARDWARE_PCENGINE_TG16, 0, "PC Engine TurboGrafx-16"});
+    addRomPath("snes", io->getDataPath() + "roms/snes/", {HARDWARE_PREFIX_SNES, 0, "Super Nintendo Entertainment System"});
+    addRomPath("gba", io->getDataPath() + "roms/gba/", {HARDWARE_PREFIX_GBA, 0, "Game Boy Advance"});	
 #endif
 
     // save newly added roms paths

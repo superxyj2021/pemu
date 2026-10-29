@@ -293,8 +293,8 @@
 
 // pfbneo cheat (金手指) - runtime only, rom menu entry
 #define TEXT_CHEATS                                     "金手指"
-#define TEXT_CHEAT_DISABLED                             "禁用"
-#define TEXT_CHEAT_ENABLED                              "启用"
+#define TEXT_CHEAT_DISABLED                             "OFF"
+#define TEXT_CHEAT_ENABLED                              "ON"
 #define TEXT_DIALOG_CURRENT                            "  ←"
 #define TEXT_DIALOG_EMPTY                              "该游戏没有金手指文件"
 

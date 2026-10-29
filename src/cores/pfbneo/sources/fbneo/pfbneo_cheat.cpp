@@ -550,10 +550,6 @@ namespace pfbneo_cheat {
                 any = true;
                 cheatLog("  ini cheat found (%s.ini), skipping mame databases",
                          drvName.c_str());
-            } else if (zipName != drvName && loadIniFile(dir + zipName + ".ini")) {
-                any = true;
-                cheatLog("  ini cheat found (%s.ini), skipping mame databases",
-                         zipName.c_str());
             } else {
                 cheatLog("  no ini: %s%s.ini", dir.c_str(), drvName.c_str());
             }

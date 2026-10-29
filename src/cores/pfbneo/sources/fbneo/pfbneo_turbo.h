@@ -56,10 +56,11 @@ namespace pfbneo_turbo {
 #define TURBO_OPT_B        0x5003
 #define TURBO_OPT_X        0x5004
 #define TURBO_OPT_Y        0x5005
-#define TURBO_OPT_LB       0x5006
-#define TURBO_OPT_RB       0x5007
-#define TURBO_OPT_LT       0x5008
-#define TURBO_OPT_RT       0x5009
+#define TURBO_OPT_LT       0x5006
+#define TURBO_OPT_RT       0x5007
+#define TURBO_OPT_LB       0x5008
+#define TURBO_OPT_RB       0x5009
+
 
     // the 8 controllable buttons, in menu display order: a b x y lb rb lt rt
     enum TurboButton {
@@ -67,10 +68,10 @@ namespace pfbneo_turbo {
         TURBO_BTN_B,
         TURBO_BTN_X,
         TURBO_BTN_Y,
-        TURBO_BTN_LB,
-        TURBO_BTN_RB,
         TURBO_BTN_LT,
-        TURBO_BTN_RT
+        TURBO_BTN_RT,
+        TURBO_BTN_LB,
+        TURBO_BTN_RB
     };
 
     // --- lifecycle ---------------------------------------------------------
