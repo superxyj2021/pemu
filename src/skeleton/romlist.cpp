@@ -71,9 +71,10 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
             // core driver does not support, bios zips, etc. are excluded)
             if (isGameSupported(*game)) {
                 m_count++;
-                if (!(m_count % 10)) {
-                    setLoadingText(TEXT_MSG_GAMES_SEARCH, m_count);
-                }
+                // update the scan counter on every rom (no more %10 batching:
+                // the counter is part of the on-screen loading text, so it
+                // should tick continuously instead of jumping by tens)
+                setLoadingText(TEXT_MSG_GAMES_SEARCH, m_count);
             }
         });
         //setLoadingText(TEXT_MSG_GAMES_SEARCH, m_games_available_count, m_games_count);

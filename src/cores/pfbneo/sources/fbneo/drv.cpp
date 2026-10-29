@@ -155,18 +155,81 @@ int DrvExit() {
 
 static double nProgressPosBurn = 0;
 
+// ---- loading progress ----------------------------------------------------
+// two independent progress accumulators (same split as the FBNeo frontend):
+//   s_burnPos - burner-level absolute progress 0..1 (the zip/rom decompression
+//               loop in bzip.cpp calls ProgressUpdateBurner() with 1/N steps)
+//   s_corePos - per-segment progress inside the core drivers, which use
+//               BurnSetProgressRange() + BurnUpdateProgress() (e.g. the NeoGeo
+//               sprite decryption loop): each BurnSetProgressRange() call
+//               narrows the current segment lower bound (s_min) and
+//               BurnUpdateProgress() fills that segment
+static double s_burnPos = 0;
+static double s_corePos = 0;
+static double s_min = 0;        // negative segment lower bound (0 when idle)
+static const double s_max = 1.0;
+
+static c2d::C2DClock s_progressClock;
+static float s_lastProgressFlip = 0;
+
+// throttled present: flip at most every 100ms so the progress bar keeps
+// moving while minimizing mid-load frames that could catch the font atlas
+// being updated with new glyphs.
+static void progressApply() {
+    double v = s_min + s_corePos + s_burnPos;
+    if (v < 0) {
+        v = 0;
+    }
+    if (v > s_max) {
+        v = s_max;
+    }
+    pemu_ui->getUiProgressBox()->setProgress((float) v);
+
+    float now = s_progressClock.getElapsedTime().asSeconds();
+    if (now - s_lastProgressFlip >= 0.1f) {
+        s_lastProgressFlip = now;
+        pemu_ui->flip();
+    }
+}
+
+// core driver: BurnSetProgressRange(dProgressRange) -> narrow the current
+// segment (lower bound = -range); s_corePos continues to fill it
+static int ProgressSetRangeBurn(double dProgressRange) {
+    s_min = -(s_max * dProgressRange);
+    return 0;
+}
+
+// core driver: BurnUpdateProgress(dProgress, pszText, bAbs) -> fill the
+// current segment (dProgress is relative to the segment, 0..1 or a delta)
+static int ProgressUpdateBurn(double dProgress, const TCHAR *pszText, bool bAbs) {
+    if (pszText) {
+        pemu_ui->getUiProgressBox()->setMessage(pszText);
+    }
+    if (bAbs) {
+        s_corePos = (-s_min) * dProgress;
+        if (s_corePos > -s_min) {
+            s_corePos = -s_min;
+        }
+    } else if (dProgress > 0) {
+        s_corePos += (-s_min) * dProgress;
+        if (s_corePos > -s_min) {
+            s_corePos = -s_min;
+        }
+    }
+    progressApply();
+    return 0;
+}
+
 static int ProgressCreate() {
-    nProgressPosBurn = 0;
+    s_burnPos = 0;
+    s_corePos = 0;
+    s_min = 0;
+    BurnExtProgressRangeCallback = ProgressSetRangeBurn;
+    BurnExtProgressUpdateCallback = ProgressUpdateBurn;
     pemu_ui->getUiProgressBox()->setVisibility(c2d::Visibility::Visible);
     pemu_ui->getUiProgressBox()->setLayer(1000);
     return 0;
 }
-
-// throttled present for the loading progress: present at most every 100ms so
-// the progress bar keeps moving while minimizing the number of mid-load frames
-// that could catch the font atlas being updated with new glyphs.
-static c2d::C2DClock s_progressClock;
-static float s_lastProgressFlip = 0;
 
 int ProgressUpdateBurner(double dProgress, const TCHAR *pszText, bool bAbs) {
     // NOTE (loading screen fixes):
@@ -181,19 +244,19 @@ int ProgressUpdateBurner(double dProgress, const TCHAR *pszText, bool bAbs) {
     //    mid-frame atlas update.
 
     if (pszText) {
-        nProgressPosBurn += dProgress;
         pemu_ui->getUiProgressBox()->setMessage(pszText);
-        pemu_ui->getUiProgressBox()->setProgress((float) nProgressPosBurn);
     } else {
         pemu_ui->getUiProgressBox()->setMessage("Please wait...");
     }
-
-    float now = s_progressClock.getElapsedTime().asSeconds();
-    if (now - s_lastProgressFlip >= 0.1f) {
-        s_lastProgressFlip = now;
-        pemu_ui->flip();
+    if (bAbs) {
+        s_burnPos = s_max * dProgress;
+    } else if (dProgress > 0) {
+        s_burnPos += s_max * dProgress;
     }
-
+    if (s_burnPos > s_max) {
+        s_burnPos = s_max;
+    }
+    progressApply();
     return 0;
 }
 

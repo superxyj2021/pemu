@@ -250,6 +250,11 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
         stop();
         return -1;
     }
+    // driver initialised: force the loading bar to 100% (the core drivers
+    // only report progress up to the last internal stage, so without this the
+    // bar can stall below the end and never reach it; same pattern as
+    // pgba/pnes/psnes which call setProgress(1) after a successful load)
+    pMain->getUiProgressBox()->setProgress(1);
     delete (aud);
     free(pBurnSoundOut);
     nFramesEmulated = 0;
