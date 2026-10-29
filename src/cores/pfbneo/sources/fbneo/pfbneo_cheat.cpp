@@ -636,11 +636,16 @@ namespace pfbneo_cheat {
         // carries a "nes_"/"snes_" prefix (e.g. ":nes_contra:", ":snes_xxx:")
         // while arcade drivers equal the zip name (":wof:"). the FBA ini
         // files use the driver name as well, so match both when they differ.
-        std::string drvName = BurnDrvGetTextA(DRV_NAME);
+        // NOTE: DRV_NAME / DRV_PARENT can legally be NULL (a parent/standalone
+        // driver has no szParent), so never pass them straight into a
+        // std::string - that would be std::string(NULL) -> strlen(NULL) crash.
+        const char *pDrvName = BurnDrvGetTextA(DRV_NAME);
+        std::string drvName = pDrvName ? pDrvName : "";
 
         // parent (clone of) driver: when the own rom has no cheat file the
         // same lookup is repeated against the parent driver (e.g. wofj -> wof)
-        std::string parentName = BurnDrvGetTextA(DRV_PARENT);
+        const char *pParentName = BurnDrvGetTextA(DRV_PARENT);
+        std::string parentName = pParentName ? pParentName : "";
         if (parentName.empty() || parentName == drvName) {
             parentName.clear();
         }

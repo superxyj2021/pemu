@@ -255,6 +255,16 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
     // bar can stall below the end and never reach it; same pattern as
     // pgba/pnes/psnes which call setProgress(1) after a successful load)
     pMain->getUiProgressBox()->setProgress(1);
+    // present the 100% frame immediately: the bar data was just updated but
+    // without a flip here the screen keeps showing the last mid-load frame
+    // (stuck at ~90%) until UiEmu::load hides the box a few lines later.
+    pMain->flip();
+    // unregister the core progress callbacks: they are only needed during
+    // DrvInit. leaving them active lets any later BurnUpdateProgress() /
+    // BurnSetProgressRange() call touch the UI (and flip) while the game is
+    // already running; the next load re-registers them in ProgressCreate().
+    BurnExtProgressUpdateCallback = NULL;
+    BurnExtProgressRangeCallback = NULL;
     delete (aud);
     free(pBurnSoundOut);
     nFramesEmulated = 0;

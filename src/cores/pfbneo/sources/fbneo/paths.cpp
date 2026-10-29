@@ -36,8 +36,13 @@ void BurnPathsInit(c2d::C2DIo *io) {
     snprintf(szAppHomePath, MAX_PATH - 1, "%s", io->getDataPath().c_str());
     io->create(szAppHomePath);
 
+    // NOTE: roms are loaded from the UI-configured romsPath (see bzip.cpp),
+    // NOT from szAppRomPath, and the SNES MSU-1 media dir is only needed by
+    // users of MSU-1 patched snes roms - so do NOT auto-create either one
+    // here (an unwanted "arcade"/"snesmsu1" folder used to appear next to
+    // the nro on every boot).
     snprintf(szAppRomPath, MAX_PATH - 1, "%s%s/", szAppHomePath, "arcade");
-    io->create(szAppRomPath);
+    snprintf(szAppSnesMsu1Path, MAX_PATH - 1, "%s%s/", szAppHomePath, "snesmsu1");
 
     snprintf(szAppSavePath, MAX_PATH - 1, "%s%s/", szAppHomePath, "saves");
     io->create(szAppSavePath);
@@ -63,9 +68,6 @@ void BurnPathsInit(c2d::C2DIo *io) {
     io->create(szAppHDDPath);
     //printf("szAppHDDPath: %s\n", szAppHDDPath);
 	
-    snprintf(szAppSnesMsu1Path, MAX_PATH - 1, "%s%s/", szAppHomePath, "snesmsu1");
-    io->create(szAppSnesMsu1Path);
-    //printf("szAppSnesMsu1Path: %s\n", szAppSnesMsu1Path);	
 
     snprintf(szAppEEPROMPath, MAX_PATH - 1, "%s%s/", szAppHomePath, "eeproms");
     io->create(szAppEEPROMPath);
