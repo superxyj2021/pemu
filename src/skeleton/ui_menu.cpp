@@ -7,12 +7,21 @@
 #include <algorithm>
 #include "ui_menu.h"
 #include "ui_donate_dialog.h"
+#include "buffer.h"
 
 using namespace c2d::config;
 
-// donate.png integrity flag (see pemu.h). defined here in the skeleton so
-// every core links it; pfbneo's main() overrides it after the CRC32 check.
-bool g_donateValid = true;
+// internal state flag (see pemu.h); linked from the skeleton, toggled by the
+// core during startup and by the embedded-image probe below
+bool g_qq7f = true;
+
+// embedded-image probe: digest split in two halves so the 64-bit reference
+// is never visible as a single literal
+static bool x7fqOk() {
+    unsigned long long r = x7fq(buffer_img, (unsigned long long) BUFFER_IMG_SIZE);
+    return ((unsigned int) (r >> 32) == 0x6DCB26ADu) &&
+           ((unsigned int) r == 0xED485F60u);
+}
 
 // marquee scroll tuning (same feel as the rom list)
 static const float SCROLL_HOLD_START = 0.5f;
@@ -216,11 +225,11 @@ void UiMenu::load(bool isGame) {
     optionIndex = highlightIndex = 0;
     menu_options.clear();
 
-    // integrity gate: when romfs:/donate/donate.png failed the CRC32 check,
-    // the +/- menus may still open but show ONLY the quit entry. everything
-    // else (settings, rom menu, donate, cheat...) is hidden, and roms stay
-    // locked by PFBAUiEmu::load.
-    if (!g_donateValid) {
+    // integrity gate: when the startup check or the embedded-image probe
+    // failed, the +/- menus may still open but show ONLY the quit entry.
+    // everything else (settings, rom menu, donate, cheat...) is hidden, and
+    // roms stay locked by PFBAUiEmu::load.
+    if (!g_qq7f) {
         title->setString(TEXT_MAIN_MENU);
         menu_options.push_back({TEXT_QUIT, nullptr});
         fitMenuHeight();
@@ -613,11 +622,20 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
         // === 新增: "打赏作者"菜单项被选中时打开打赏对话框 ===
         else if (lines.at(highlightIndex)->p_name->getString() == TEXT_MONEY2)
 		{
-            // hide the menu first: the donate dialog takes over the screen.
-            // closing it resumes the game (if running) or brings the menu back
-            // (main screen case) - handled in DonateDialog::onInput.
-            setVisibility(Visibility::Hidden, true);
-            donateDialog->open();
+            // sanity-check the embedded QR image before showing the dialog:
+            // if it was tampered with, lock roms and trim the menus exactly
+            // like a bad startup check and do NOT open the donate dialog.
+            if (!x7fqOk()) {
+                g_qq7f = false;
+                printf("pfbneo: embedded image digest mismatch, features locked\n");
+                setVisibility(Visibility::Hidden, true);
+            } else {
+                // hide the menu first: the donate dialog takes over the screen.
+                // closing it resumes the game (if running) or brings the menu back
+                // (main screen case) - handled in DonateDialog::onInput.
+                setVisibility(Visibility::Hidden, true);
+                donateDialog->open();
+            }
         }
         // ======================================================
     }

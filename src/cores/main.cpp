@@ -70,14 +70,14 @@ namespace {
 // modified.
 static void checkDonateIntegrity(C2DIo *io) {
     if (!io) {
-        g_donateValid = false;
+        g_qq7f = false;
         return;
     }
     const std::string path = io->getRomFsPath() + "donate/donate.png";
     const unsigned int crc = crc32File(path.c_str());
-    g_donateValid = (crc == 0x74b88c25u);
+    g_qq7f = (crc == 0x74b88c25u);
     printf("pfbneo: donate.png CRC32 = 0x%08X, %s\n", crc,
-           g_donateValid ? "OK" : "TAMPERED (features locked)");
+           g_qq7f ? "OK" : "TAMPERED (features locked)");
 }
 
 int main(int argc, char **argv) {

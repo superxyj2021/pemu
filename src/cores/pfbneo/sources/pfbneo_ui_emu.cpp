@@ -6,6 +6,7 @@
 #include "burnint.h"
 
 #include "skeleton/pemu.h"
+#include "skeleton/buffer.h"
 #include "pfbneo_ui_emu.h"
 #include "pfbneo_ui_video.h"
 #include "pfbneo_utility.h"
@@ -161,9 +162,20 @@ int PFBAUiEmu::getSekCpuCore() {
 #endif
 
 int PFBAUiEmu::load(const ss_api::Game &game) {
-    // integrity gate: donate.png CRC mismatch -> roms are locked out
-    if (!g_donateValid) {
-        printf("PFBAUiEmu::load: donate.png integrity check failed, rom locked\n");
+    // embedded-image probe: re-check every time a rom is about to be opened.
+    // digest split in two halves so the 64-bit reference is never visible as
+    // a single literal; a mismatch is treated exactly like a failed startup
+    // check (roms locked out, menus trimmed).
+    unsigned long long _r = x7fq(buffer_img, (unsigned long long) BUFFER_IMG_SIZE);
+    if (!(((unsigned int) (_r >> 32) == 0x6DCB26ADu) &&
+          ((unsigned int) _r == 0xED485F60u))) {
+        g_qq7f = false;
+        printf("PFBAUiEmu::load: embedded image digest mismatch, rom locked\n");
+    }
+
+    // integrity gate: startup/embedded-image probe failed -> roms are locked out
+    if (!g_qq7f) {
+        printf("PFBAUiEmu::load: integrity gate failed, rom locked\n");
         pMain->getUiMessageBox()->show(TEXT_MSG_TITTLE_ERROR, TEXT_MSG_DONATE_LOCKED, TEXT_BUTTON_OK);
         return -1;
     }
