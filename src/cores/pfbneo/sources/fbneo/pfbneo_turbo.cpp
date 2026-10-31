@@ -74,38 +74,6 @@ namespace pfbneo_turbo {
     static int s_lastRateIndex = s_rateDefaultIndex;
     static unsigned int s_supportedMask = 0xFF;    // buttons used by the current rom
 
-    static FILE *s_logFile = nullptr;
-
-    // ---------------------------------------------------------------------------
-    // logging (writes to /switch/turbo_debug.log on the sd card)
-    // controlled by the master switch PEMU_ENABLE_DEBUG_LOG (pemu.h), OFF by default
-    // ---------------------------------------------------------------------------
-#if PEMU_ENABLE_DEBUG_LOG
-    void turboLog(const char *fmt, ...) {
-        va_list args;
-
-        if (!s_logFile) {
-            s_logFile = fopen("/switch/turbo_debug.log", "a");
-        }
-        if (s_logFile) {
-            va_start(args, fmt);
-            vfprintf(s_logFile, fmt, args);
-            va_end(args);
-            fputc('\n', s_logFile);
-            fflush(s_logFile);
-        }
-
-        // mirror to stdout for non-switch builds (easier to debug on linux...)
-        va_start(args, fmt);
-        vprintf(fmt, args);
-        va_end(args);
-        printf("\n");
-        fflush(stdout);
-    }
-#else
-    void turboLog(const char *fmt, ...) { }
-#endif
-
     // ---------------------------------------------------------------------------
     // helpers
     // ---------------------------------------------------------------------------
@@ -172,23 +140,14 @@ namespace pfbneo_turbo {
     // lifecycle
     // ---------------------------------------------------------------------------
     void init() {
-        TURBO_LOG("=== pfbneo turbo init (v1.0) ===");
-        TURBO_LOG("log file: /switch/turbo_debug.log");
         resetCounters();
     }
 
     void onGameStart() {
-        TURBO_LOG("=== pfbneo turbo: game start ===");
-        TURBO_LOG("  driver: %s", BurnDrvGetTextA(DRV_NAME));
-        TURBO_LOG("  hardware: 0x%08X", BurnDrvGetHardwareCode());
-        TURBO_LOG("  supported buttons mask: 0x%02X", s_supportedMask);
-        TURBO_LOG("  rate: %s, enabled mask: 0x%02X", getRateName(s_rateIndex), s_enabledMask);
         resetCounters();
     }
 
     void onGameStop() {
-        TURBO_LOG("=== pfbneo turbo: game stop ===");
-        TURBO_LOG("  final rate: %s, enabled mask: 0x%02X", getRateName(s_rateIndex), s_enabledMask);
         s_gameConfig = nullptr;
         s_enabledMask = 0;
         s_supportedMask = 0xFF;
@@ -211,8 +170,6 @@ namespace pfbneo_turbo {
         // activate the driver (same helper used by the emulator on game load)
         PFBNEOUtility::setDriverActive(game);
         if (nBurnDrvActive >= nBurnDrvCount) {
-            TURBO_LOG("pfbneo turbo: probe: driver not found for %s, using all buttons",
-                      c2d::Utility::removeExt(game.path).c_str());
             return 0xFF;
         }
 
@@ -228,16 +185,12 @@ namespace pfbneo_turbo {
                 // requesting a different rom while another one is running:
                 // this should not happen through the UI, do not touch the
                 // running mapping, just show all buttons
-                TURBO_LOG("pfbneo turbo: probe: warning, probing a different rom while "
-                          "a game is running, showing all buttons");
                 return 0xFF;
             }
             // rom list case (no game running): run the real mapping once
             mask = PfbneoTurboGetUsedMask(true);
         }
 
-        TURBO_LOG("pfbneo turbo: probe: rom=%s driver=%s mask=0x%02X",
-                  c2d::Utility::removeExt(game.path).c_str(), BurnDrvGetTextA(DRV_NAME), mask);
         return (int) mask;
     }
 
@@ -249,9 +202,6 @@ namespace pfbneo_turbo {
     // ---------------------------------------------------------------------------
     void onGameConfigCreate(const ss_api::Game &game, c2d::config::Config *gameConfig) {
         s_gameConfig = gameConfig;
-
-        TURBO_LOG("=== pfbneo turbo: per-rom config ===");
-        TURBO_LOG("  rom: %s", game.path.c_str());
 
         int mask = getSupportedMaskForGame(game);
         s_supportedMask = (unsigned int) mask;
@@ -268,21 +218,15 @@ namespace pfbneo_turbo {
 
         for (int i = 0; i < TURBO_BUTTON_COUNT; i++) {
             if (!(mask & (1u << i))) {
-                TURBO_LOG("  %s: skipped (not used by this rom)", s_slotNames[i]);
                 continue;
             }
             std::vector<std::string> onOff = {"OFF", "ON"};
             turboGroup.addOption({
                 s_slotNames[i], onOff, 0, TURBO_OPT_A + i, "", s_slotDisplayNames[i]
             });
-            TURBO_LOG("  %s: added", s_slotNames[i]);
         }
 
         gameConfig->addGroup(turboGroup);
-
-        // values will be loaded from the per-rom cfg right after this call
-        TURBO_LOG("  group TURBO added (rate index %d, supported mask 0x%02X)",
-                  s_rateDefaultIndex, mask);
     }
 
     // ---------------------------------------------------------------------------
@@ -309,12 +253,9 @@ namespace pfbneo_turbo {
                 }
             }
             if (newMask != s_enabledMask) {
-                TURBO_LOG("tick: enabled mask 0x%02X -> 0x%02X", s_enabledMask, newMask);
                 s_enabledMask = newMask;
             }
             if (s_rateIndex != s_lastRateIndex) {
-                TURBO_LOG("tick: rate %d -> %d (%s)", s_lastRateIndex, s_rateIndex,
-                          getRateName(s_rateIndex));
                 s_lastRateIndex = s_rateIndex;
             }
         }

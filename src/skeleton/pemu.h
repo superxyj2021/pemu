@@ -37,12 +37,6 @@
 
 #include "ui_text_def.h"
 
-// master switch for ALL pfbneo debug logs (cheat / turbo / emu / menu).
-// 0 = logs compiled out (release), 1 = debug logs written to /switch/*.log.
-#ifndef PEMU_ENABLE_DEBUG_LOG
-#define PEMU_ENABLE_DEBUG_LOG 0
-#endif
-
 // internal state flag (set by the core during startup and by the probe
 // below); when cleared, opening roms is blocked and the +/- menus only show
 // the "退出" (quit) entry.

@@ -13,7 +13,6 @@
 #include <cstring>
 #include <cctype>
 #include <cstdlib>
-#include <cstdarg>
 #include <utility>
 
 namespace pfbneo_cheat {
@@ -46,35 +45,10 @@ namespace pfbneo_cheat {
 #define HW_GGENIE ( HW_NES || HW_SNES )
 
     static std::vector<PfbCheat> s_cheats;
-    static bool s_logEnabled = true;
 
     // where the current game's cheats came from (see CheatSource in the header)
     static CheatSource g_source = CheatSource::None;
     static std::string g_sourceRom;
-
-    // ---- logging (write to /switch/cheat_debug.log; controlled by the
-    //      master switch PEMU_ENABLE_DEBUG_LOG in pemu.h, OFF by default) ---
-#if PEMU_ENABLE_DEBUG_LOG
-    static void cheatLog(const char *fmt, ...) {
-        if (!s_logEnabled) {
-            return;
-        }
-        static FILE *s_log = nullptr;
-        if (!s_log) {
-            s_log = fopen("/switch/cheat_debug.log", "a");
-        }
-        if (s_log) {
-            va_list args;
-            va_start(args, fmt);
-            vfprintf(s_log, fmt, args);
-            va_end(args);
-            fputc('\n', s_log);
-            fflush(s_log);
-        }
-    }
-#else
-    static void cheatLog(const char *fmt, ...) { }
-#endif
 
     // ---- ini parser ---------------------------------------------------------
 
@@ -137,7 +111,6 @@ namespace pfbneo_cheat {
                     s_cheats.push_back(PfbCheat());
                     current = &s_cheats.back();
                     current->name = name;
-                    cheatLog("cheat: '%s'", name.c_str());
                 }
                 continue;
             }
@@ -209,7 +182,6 @@ namespace pfbneo_cheat {
 
             current->optionNames.push_back(optName);
             current->optionAddresses.push_back(addrs);
-            cheatLog("  option[%d] '%s' (%zu addr groups)", optionIndex, optName.c_str(), addrs.size());
         }
 
         fclose(f);
@@ -650,10 +622,6 @@ namespace pfbneo_cheat {
             parentName.clear();
         }
 
-        cheatLog("=== pfbneo cheat load (v4): %s (zip=%s, drv=%s, parent=%s) ===",
-                 game.path.c_str(), zipName.c_str(), drvName.c_str(),
-                 parentName.empty() ? "-" : parentName.c_str());
-
         // source bookkeeping for the dialog title
         g_source = CheatSource::None;
         g_sourceRom.clear();
@@ -667,7 +635,6 @@ namespace pfbneo_cheat {
         if (!dir.empty() && loadIniFile(dir + drvName + ".ini")) {
             g_source = CheatSource::Ini;
             g_sourceRom = drvName;
-            cheatLog("  ini cheat found (%s.ini)", drvName.c_str());
         } else {
             int r = 0;
             if (HW_GGENIE) {
@@ -682,39 +649,29 @@ namespace pfbneo_cheat {
             if (r == 1) {
                 g_source = CheatSource::Dat;
                 g_sourceRom = drvName;
-                cheatLog("  dat cheat found (%s section)", drvName.c_str());
             } else if (r == 2) {
                 // parent dat hit - but the parent ini has higher priority
                 if (!dir.empty() && !parentName.empty()
                     && loadIniFile(dir + parentName + ".ini")) {
                     g_source = CheatSource::ParentIni;
                     g_sourceRom = parentName;
-                    cheatLog("  PARENT ini cheat found (%s.ini)", parentName.c_str());
                     s_datParentCheats.clear();
                 } else {
                     s_cheats.insert(s_cheats.end(), s_datParentCheats.begin(),
                                     s_datParentCheats.end());
                     g_source = CheatSource::ParentDat;
                     g_sourceRom = parentName;
-                    cheatLog("  dat cheat found in PARENT (%s) section",
-                             parentName.c_str());
                 }
             } else if (!dir.empty() && !parentName.empty()
                        && loadIniFile(dir + parentName + ".ini")) {
                 g_source = CheatSource::ParentIni;
                 g_sourceRom = parentName;
-                cheatLog("  PARENT ini cheat found (%s.ini)", parentName.c_str());
-            } else {
-                cheatLog("  no ini/dat cheat found for this game");
             }
         }
 
         if (g_source == CheatSource::None) {
-            cheatLog("  no cheat file found for this game");
             return;
         }
-
-        cheatLog("  %zu cheat(s) loaded", s_cheats.size());
 
         // the burner frontend normally flips this on; without it both
         // CheatUpdate() and CheatEnable() early-out and cheats never apply
@@ -722,11 +679,6 @@ namespace pfbneo_cheat {
 
         // rebuild the core list (all cheats start inactive; runtime-only)
         buildCoreList();
-        if (!pCheatInfo) {
-            cheatLog("  pCheatInfo is empty");
-            return;
-        }
-        cheatLog("  pCheatInfo ready, %d entry(s)", (int) s_cheats.size());
     }
 
     void selectOption(int cheatIndex, int optionIndex) {
@@ -740,9 +692,6 @@ namespace pfbneo_cheat {
 
         s_cheats[cheatIndex].selected = optionIndex;
         CheatEnable(cheatIndex, optionIndex);
-        cheatLog("cheat[%d] '%s' -> option[%d] '%s'",
-                 cheatIndex, cheat.name.c_str(), optionIndex,
-                 cheat.optionNames[optionIndex].c_str());
     }
 
     void reset() {

@@ -15,24 +15,6 @@
 #include "fbneo/pfbneo_cheat.h"
 #include "retro_input_wrapper.h"
 
-// tiny helper to trace the cheat dialog (log file: /switch/cheat_emu.log,
-// controlled by the master switch PEMU_ENABLE_DEBUG_LOG in pemu.h, OFF by default)
-#if PEMU_ENABLE_DEBUG_LOG
-static void cheatLog2(const char *fmt, ...) {
-    FILE *f = fopen("/switch/cheat_emu.log", "a");
-    if (f) {
-        va_list args;
-        va_start(args, fmt);
-        vfprintf(f, fmt, args);
-        va_end(args);
-        fputc('\n', f);
-        fclose(f);
-    }
-}
-#else
-static void cheatLog2(const char *fmt, ...) { }
-#endif
-
 using namespace c2d;
 using namespace pemu;
 
@@ -85,7 +67,6 @@ void PFBAUiEmu::attachToUi() {
     if (cheatDialog && !m_dialogAttached) {
         pMain->add(cheatDialog);
         m_dialogAttached = true;
-        cheatLog2("attachToUi: dialog attached to ui tree, dialogPtr=%p", (void *) cheatDialog);
     }
 }
 
@@ -93,10 +74,7 @@ bool PFBAUiEmu::onMenuExtra(const std::string &name) {
     if (name == TEXT_CHEATS) {
         // rom menu -> 金手指: open the cheat dialog (game is running)
         if (cheatDialog) {
-            cheatLog2("onMenuExtra: opening cheat dialog");
             cheatDialog->open();
-        } else {
-            cheatLog2("onMenuExtra: cheatDialog is NULL!");
         }
         return true;
     }

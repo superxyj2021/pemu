@@ -66,7 +66,6 @@ private:
     int highlightIndex = 0;
     int maxLines = 0;
     float lineHeight = 0;
-    int m_logCounter = 0;  // throttle render-trace logs
 
     // marquee scroll state (name and value scroll independently)
     c2d::C2DClock m_scrollClock;

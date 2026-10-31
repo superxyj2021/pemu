@@ -574,21 +574,6 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
 
     // FIRE1 (ENTER)
     if (buttons & Input::Button::A) {
-#if PEMU_ENABLE_DEBUG_LOG
-        // diagnostic: trace which menu line is selected when A is pressed
-        {
-            FILE *f = fopen("/switch/cheat_menu.log", "a");
-            if (f) {
-                fprintf(f, "UiMenu::onInput: A pressed, idx=%d name='%s' opt=%p isRom=%d isEmu=%d\n",
-                        highlightIndex,
-                        lines.at(highlightIndex)->p_name->getString().c_str(),
-                        (void *) lines.at(highlightIndex)->p_option,
-                        isRomMenu ? 1 : 0,
-                        ui->getUiEmu()->isVisible() ? 1 : 0);
-                fclose(f);
-            }
-        }
-#endif
         auto option = lines.at(highlightIndex)->p_option;
         if (option && option->getFlags() == PEMUConfig::Flags::INPUT) {
             int new_key = 0;

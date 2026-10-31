@@ -5,29 +5,10 @@
 #include "pfbneo_ui_cheat.h"
 #include "fbneo/pfbneo_cheat.h"
 
-#include <cstdarg>
 #include <algorithm>
 
 using namespace c2d;
 using namespace pemu;
-
-// tiny helper to trace the cheat dialog (log file: /switch/cheat_dialog.log,
-// controlled by the master switch PEMU_ENABLE_DEBUG_LOG in pemu.h, OFF by default)
-#if PEMU_ENABLE_DEBUG_LOG
-static void dialogLog(const char *fmt, ...) {
-    FILE *f = fopen("/switch/cheat_dialog.log", "a");
-    if (f) {
-        va_list args;
-        va_start(args, fmt);
-        vfprintf(f, fmt, args);
-        va_end(args);
-        fputc('\n', f);
-        fclose(f);
-    }
-}
-#else
-static void dialogLog(const char *fmt, ...) { }
-#endif
 
 // dialog geometry (overrides the STATES_MENU skin rect):
 //   width 640, top edge at y=180, height 540 (180 -> bottom of the 720px screen)
@@ -183,9 +164,6 @@ void PfbneCheatDialog::open() {
     // dialog as Visible. the two calls happen in the same frame -> no flicker.
     setVisibility(Visibility::Hidden, false);
     setVisibility(Visibility::Visible, false);
-
-    dialogLog("dialog: open, this=%p, cheats=%d isVis=%d", (void *) this,
-              count, isVisible() ? 1 : 0);
 }
 
 void PfbneCheatDialog::close() {
@@ -195,7 +173,6 @@ void PfbneCheatDialog::close() {
     if (ui->getUiEmu()) {
         ui->getUiEmu()->resume();
     }
-    dialogLog("dialog: close (resume game)");
 }
 
 bool PfbneCheatDialog::isSelectable(int cheatIndex) {
@@ -413,8 +390,6 @@ bool PfbneCheatDialog::onInput(c2d::Input::Player *players) {
             }
             pfbneo_cheat::selectOption(idx, cur);
             updateLines();
-            dialogLog("dialog: cheat[%d] option -> %d (%s)", idx, cur,
-                      pfbneo_cheat::getOptionName(idx, cur));
         }
         return true;
     }
@@ -481,22 +456,8 @@ void PfbneCheatDialog::onUpdate() {
             value->setScrollOffset(0.f);
         }
     }
-
-    // render-trace: if this logs, the update pass reaches the dialog.
-    // throttled so the file does not grow unbounded.
-    if (isVisible() && (m_logCounter++ % 30) == 0) {
-        dialogLog("dialog::onUpdate vis=VISIBLE");
-    }
 }
 
 void PfbneCheatDialog::onDraw(c2d::Transform &transform, bool draw) {
-    // render-trace: throttled entry log (the position/visibility bug is fixed;
-    // this stays for one more validation round, then it will be removed).
-    if ((m_logCounter++ % 60) == 0) {
-        dialogLog("dialog::onDraw draw=%d isVis=%d pos=(%.1f,%.1f) size=(%.1f,%.1f)",
-                  draw ? 1 : 0, isVisible() ? 1 : 0,
-                  getPosition().x, getPosition().y,
-                  getSize().x, getSize().y);
-    }
     SkinnedRectangle::onDraw(transform, draw);
 }

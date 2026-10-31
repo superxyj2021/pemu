@@ -19,9 +19,6 @@
 #ifndef PFBNEO_TURBO_H
 #define PFBNEO_TURBO_H
 
-#include <cstdio>
-#include <cstdarg>
-
 // ---------------------------------------------------------------------------
 // forward declarations (avoid heavy / non self-contained includes)
 // ---------------------------------------------------------------------------
@@ -34,11 +31,6 @@ namespace c2d {
         class Config;
     }
 }
-
-// ---------------------------------------------------------------------------
-// SD card debug log control (requirement: macro switch, enabled by default)
-// ---------------------------------------------------------------------------
-#define TURBO_LOG_ENABLE 0
 
 namespace pfbneo_turbo {
 
@@ -75,7 +67,7 @@ namespace pfbneo_turbo {
     };
 
     // --- lifecycle ---------------------------------------------------------
-    void init();                              // open log / init defaults
+    void init();                              // init defaults
     void onGameStart();                       // rom loaded (reset + log)
     void onGameStop();                        // rom stopped
     void onGameConfigCreate(const ss_api::Game &game, c2d::config::Config *gameConfig);
@@ -93,16 +85,7 @@ namespace pfbneo_turbo {
     const char *getRateName(int index);
     unsigned int getSupportedMask();          // bitmask of buttons used by the current rom
     bool        isSupported(TurboButton b);
-
-    // --- SD card log ---------------------------------------------------------
-    void turboLog(const char *fmt, ...);
 }
-
-#if TURBO_LOG_ENABLE
-#define TURBO_LOG(...) pfbneo_turbo::turboLog(__VA_ARGS__)
-#else
-#define TURBO_LOG(...) ((void) 0)
-#endif
 
 // exported from retro_input.cpp (input mapping layer)
 unsigned PfbneoTurboGetUsedMask(bool remap);
