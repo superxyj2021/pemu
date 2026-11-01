@@ -32,6 +32,13 @@ void MpvTexture::onDraw(c2d::Transform &transform, bool draw) {
             glGetIntegerv(GL_VIEWPORT, vp);
             mpv_render_context_render(mpv->getContext(), r_params);
             glViewport(vp[0], vp[1], (GLsizei) vp[2], (GLsizei) vp[3]);
+
+            // mpv rendered into our context and may have changed the GL state;
+            // invalidate the renderer's cached program/texture/blend so the next
+            // draw re-applies everything.
+            if (c2d_renderer) {
+                c2d_renderer->onExternalGLRender();
+            }
         }
     }
 

@@ -66,6 +66,8 @@ namespace pemu {
         c2d::C2DClock mTimerLoadVideo;
         int mTimerLoadVideoDelay = 5000;
         int mTimerLoadVideoDone = 0;
+        ss_api::Game mPendingGame;
+        bool mPendingLoad = false;
     };
 }
 

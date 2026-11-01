@@ -5,7 +5,9 @@
 #include "skeleton/pemu.h"
 #include "burner.h"
 #include "pfbneo_utility.h"
+#include "gbk_unicode_table.h"
 #include <fstream>
+#include <sstream>
 #include <algorithm>
 #include <filesystem>
 #include <unordered_map>
@@ -15,85 +17,97 @@
 static std::unordered_map<std::string, std::string> g_ChineseGameMap;
 
 
-// ---------- 从二进制 .bin 文件快速加载查找表 ----------
-// 二进制格式 (版本1):
-//   [4字节 Magic: 'C','G','L','T']
-//   [4字节 Version (uint32_t LE) = 1]
-//   [4字节 Entry Count (uint32_t LE)]
-//   每条记录:
-//     [2字节 Key长度 (uint16_t LE)]
-//     [Key字节 (UTF-8)]
-//     [2字节 Value长度 (uint16_t LE)]
-//     [Value字节 (UTF-8)]
-static bool LoadChineseGameListBinary(const std::string& filePath)
-{
-    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
-    if (!file.is_open())
-    {
-        return false;
-    }
-
-    std::streamsize fileSize = file.tellg();
-    if (fileSize < 12)  // 文件头最小大小
-    {
-        return false;
-    }
-    file.seekg(0, std::ios::beg);
-
-    // 读取文件头
-    char magic[4];
-    file.read(magic, 4);
-    if (std::memcmp(magic, "CGLT", 4) != 0)
-    {
-        return false;
-    }
-
-    uint32_t version = 0;
-    uint32_t count = 0;
-    file.read(reinterpret_cast<char*>(&version), 4);
-    file.read(reinterpret_cast<char*>(&count), 4);
-    if (version != 1)
-    {
-        return false;
-    }
-
-    // 清空旧数据并预分配桶数量
-    g_ChineseGameMap.clear();
-    g_ChineseGameMap.reserve(count);
-
-    // 读取每条记录
-    for (uint32_t i = 0; i < count; i++)
-    {
-        uint16_t keyLen = 0;
-        uint16_t valLen = 0;
-        file.read(reinterpret_cast<char*>(&keyLen), 2);
-        if (keyLen > 0)
-        {
-            std::string key(keyLen, '\0');
-            file.read(&key[0], keyLen);
-            file.read(reinterpret_cast<char*>(&valLen), 2);
-            std::string val(valLen, '\0');
-            file.read(&val[0], valLen);
-            g_ChineseGameMap[key] = val;
+// ---------- GBK (EUC-CN) -> UTF-8 ----------
+// 用生成表做查表转换（switch 工具链的 libc 未编译 iconv，见 gbk_unicode_table.h）
+static std::string GbkToUtf8(const std::string &input) {
+    std::string out;
+    out.reserve(input.size() * 2);
+    size_t i = 0;
+    while (i < input.size()) {
+        unsigned char c = (unsigned char) input[i];
+        if (c < 0x80) {
+            out += (char) c;
+            i++;
+            continue;
         }
-        else
-        {
-            // key长度为0，跳过value
-            file.read(reinterpret_cast<char*>(&valLen), 2);
-            if (valLen > 0)
-            {
-                std::string val(valLen, '\0');
-                file.read(&val[0], valLen);
+        // GBK 双字节：lead 0x81-0xFE，trail 0x40-0xFE（0x7F 除外）
+        if (c >= pemu::GBK_UNICODE_TABLE_LEAD_MIN && c <= 0xFE && i + 1 < input.size()) {
+            unsigned char lo = (unsigned char) input[i + 1];
+            if (lo >= pemu::GBK_UNICODE_TABLE_TRAIL_MIN && lo != 0x7F) {
+                int idx = (c - pemu::GBK_UNICODE_TABLE_LEAD_MIN) * pemu::GBK_UNICODE_TABLE_COLS
+                          + (lo >= 0x7F ? lo - 0x41 : lo - pemu::GBK_UNICODE_TABLE_TRAIL_MIN);
+                unsigned short cp = pemu::GBK_UNICODE_TABLE[idx];
+                if (cp != 0) {
+                    if (cp < 0x80) {
+                        out += (char) cp;
+                    } else if (cp < 0x800) {
+                        out += (char) (0xC0 | (cp >> 6));
+                        out += (char) (0x80 | (cp & 0x3F));
+                    } else {
+                        out += (char) (0xE0 | (cp >> 12));
+                        out += (char) (0x80 | ((cp >> 6) & 0x3F));
+                        out += (char) (0x80 | (cp & 0x3F));
+                    }
+                    i += 2;
+                    continue;
+                }
             }
         }
+        // 无法映射的字节直接跳过
+        i++;
     }
+    return out;
+}
 
-    // 检查读取是否成功
-    if (file.bad() || file.fail())
-    {
+
+// ---------- 从文本 .glt 文件加载查找表 ----------
+// 文件格式（FinalBurn Neo 的中文翻译模板，GBK/GB2312 编码，CRLF 换行）：
+//   // 注释行
+//   <driver>\t<显示名>
+// 文件位置：与 nro 同级目录下的 localisation/Chinese (Simplified)_gamelist.glt
+static bool LoadChineseGameListText(const std::string &filePath)
+{
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) {
+        printf("LoadChineseGameListText: could not open %s\n", filePath.c_str());
         return false;
     }
 
+    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    std::string utf8 = GbkToUtf8(content);
+
+    g_ChineseGameMap.clear();
+    std::string line;
+    std::stringstream ss(utf8);
+    while (std::getline(ss, line)) {
+        // 去掉 CRLF 的 \r
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+        // 跳过空行和注释
+        if (line.empty() || line.compare(0, 2, "//") == 0) {
+            continue;
+        }
+        auto tab = line.find('\t');
+        if (tab == std::string::npos) {
+            continue;
+        }
+        std::string key = line.substr(0, tab);
+        std::string val = line.substr(tab + 1);
+        // 去掉 key 两侧空白
+        size_t b = key.find_first_not_of(" \t");
+        size_t e = key.find_last_not_of(" \t");
+        if (b == std::string::npos) {
+            continue;
+        }
+        key = key.substr(b, e - b + 1);
+        if (key.empty() || val.empty()) {
+            continue;
+        }
+        g_ChineseGameMap[key] = val;
+    }
+
+    printf("LoadChineseGameListText: %s, entries: %zu\n", filePath.c_str(), g_ChineseGameMap.size());
     return !g_ChineseGameMap.empty();
 }
 
@@ -238,12 +252,13 @@ int PFBNEOUtility::setDriverActive(const Game &game) {
     return (int) nBurnDrvActive;
 }
 
-PFBNEOUtility::GameInfo PFBNEOUtility::getGameInfo(const Game &game, const std::string& chineseFilePath) {
-    // 懒加载：第一次调用时自动加载中文翻译表
+PFBNEOUtility::GameInfo PFBNEOUtility::getGameInfo(const Game &game, const std::string& chineseTxtPath) {
+    // 懒加载：第一次调用时自动加载中文翻译表（nro 同级
+    // localisation/Chinese (Simplified)_gamelist.glt，GBK 文本）。
     static bool s_chineseListLoaded = false;
-    if (!s_chineseListLoaded && !chineseFilePath.empty())
+    if (!s_chineseListLoaded)
     {
-        LoadChineseGameListBinary(chineseFilePath);
+        LoadChineseGameListText(chineseTxtPath);
         s_chineseListLoaded = true;
     }
 

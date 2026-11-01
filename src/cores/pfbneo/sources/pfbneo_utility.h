@@ -24,7 +24,7 @@ public:
 
     static int setDriverActive(const Game &game);
 
-    static GameInfo getGameInfo(const Game &game, const std::string& chineseFilePath);
+    static GameInfo getGameInfo(const Game &game, const std::string& chineseTxtPath);
 };
 
 #endif //PEMU_PFBNEO_UTILITY_H

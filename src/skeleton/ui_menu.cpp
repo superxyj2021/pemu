@@ -28,12 +28,17 @@ static const float SCROLL_HOLD_START = 0.5f;
 static const float SCROLL_HOLD_EDGE = 0.65f;
 static const float SCROLL_SPEED = 12.f;
 
+// green used for option values that were changed away from their default
+// (same as the cheat dialog: Material Green A700 #00C853)
+static const c2d::Color MODIFIED_COLOR(0, 200, 83, 255);
+
 class MenuLine : public c2d::RectangleShape {
 
 public:
     MenuLine(UiMain *u, FloatRect &rect, Skin::TextGroup &tg) : RectangleShape(rect) {
         pMain = u;
         m_textGroup = tg;
+        m_valueDefaultColor = m_textGroup.color;
         Font *font = pMain->getSkin()->getFont();
 
         p_name = new Text("OPTION NAME", m_textGroup.size, font);
@@ -75,7 +80,7 @@ public:
         // this is a menu title (or custom option)
         if (!option) {
             // custom options, // === 新增: "打赏作者" 菜单项显示"执行" ===
-            if (name == TEXT_STATES || name == TEXT_QUIT || name == TEXT_MONEY2 || name == TEXT_CHEATS) {
+            if (name == TEXT_STATES || name == TEXT_QUIT || name == TEXT_MONEY2 || name == TEXT_CHEATS || name == TEXT_SCAN_ROMS) {
                 p_value->setVisibility(Visibility::Visible);
                 p_value->setString(TEXT_GO);
                 return;
@@ -114,6 +119,14 @@ public:
             p_value->setVisibility(Visibility::Visible);
             p_value->setString(option->getString());
         }
+
+        // highlight values that were changed away from their default (green),
+        // like the cheat dialog does; keeps the skin color otherwise
+        if (option->isDefault()) {
+            p_value->setFillColor(m_valueDefaultColor);
+        } else {
+            p_value->setFillColor(MODIFIED_COLOR);
+        }
     }
 
     UiMain *pMain = nullptr;
@@ -122,6 +135,7 @@ public:
     Sprite *p_sprite = nullptr;
     Option *p_option = nullptr;
     Skin::TextGroup m_textGroup;
+    c2d::Color m_valueDefaultColor;
 };
 
 UiMenu::UiMenu(UiMain *uiMain) : SkinnedRectangle(uiMain, {"OPTIONS_MENU"}) {
@@ -271,6 +285,9 @@ void UiMenu::load(bool isGame) {
 
     // add "OTHER" option menu
     menu_options.push_back({TEXT_OTHER, nullptr});
+    // "scan roms" lives in the OTHER section of the main menu, just above
+    // QUIT (only in the main menu, not the in-game rom menu)
+    if (!isRomMenu) menu_options.push_back({TEXT_SCAN_ROMS, nullptr});
     if (isRomMenu) menu_options.push_back({TEXT_STATES, nullptr});
     // pfbneo cheat: runtime-only, rom menu entry - only while a game is
     // actually running (NOT in the main screen's rom menu opened with Menu2)
@@ -342,7 +359,7 @@ void UiMenu::onKeyUp() {
 
     // skip menus
     auto opt = menu_options.at(optionIndex + highlightIndex);
-    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2 && opt.name != TEXT_CHEATS) {
+    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2 && opt.name != TEXT_CHEATS && opt.name != TEXT_SCAN_ROMS) {
         return onKeyUp();
     }
 
@@ -366,7 +383,7 @@ void UiMenu::onKeyDown() {
 
     // skip menus
     auto opt = menu_options.at(optionIndex + highlightIndex);
-    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2 && opt.name != TEXT_CHEATS) {
+    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2 && opt.name != TEXT_CHEATS && opt.name != TEXT_SCAN_ROMS) {
         return onKeyDown();
     }
 
@@ -615,6 +632,28 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
                 needSave = false;
                 ui->done = true;
             }
+        }
+        // === "扫描ROM"：全量重扫所有 rom 目录 ===
+        else if (lines.at(highlightIndex)->p_name->getString() == TEXT_SCAN_ROMS)
+		{
+            // hide the menu and rescan: the scan runs synchronously with the
+            // progress screen on screen; the previous cache is only replaced when
+            // the new scan completes (see RomList::build). if the user quits
+            // mid-scan (ui->done), the scan is discarded and the app exits.
+            setVisibility(Visibility::Hidden, true);
+            auto *romList = ui->getUiRomList()->getRomList();
+            if (romList) {
+                romList->setForceRescan(true);
+                romList->build();
+                if (ui->done) {
+                    // app is closing (scan aborted): skip the refresh
+                    return true;
+                }
+                romList->initFav();
+                ui->getUiRomList()->updateRomList();
+                ui->getConfig()->save();
+            }
+            ui->getInput()->clear();
         }
         // === 新增: "打赏作者"菜单项被选中时打开打赏对话框 ===
         else if (lines.at(highlightIndex)->p_name->getString() == TEXT_MONEY2)

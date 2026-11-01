@@ -16,19 +16,10 @@ RomList::RomList(UiMain *_ui, const std::string &emuVersion, const std::vector<s
     rect = new C2DRectangle(
             Vector2f(ui->getSize().x - 8, ui->getSize().y - 8));
     ui->getSkin()->loadRectangleShape(rect, {"MAIN"});
-
-    auto *title = new RectangleShape({16, 16});
-    if (ui->getSkin()->loadRectangleShape(title, {"MAIN", "TITLE"})) {
-        title->setOrigin(Origin::Center);
-        title->setPosition(Vector2f(rect->getSize().x / 2, rect->getSize().y / 2));
-        float scaling = std::min(
-                (rect->getSize().x * 0.8f) / title->getSize().x,
-                (rect->getSize().y * 0.8f) / title->getSize().y);
-        title->setScale(scaling, scaling);
-        rect->add(title);
-    } else {
-        delete (title);
-    }
+    // kept only as a container for the scan status text; hidden unless a
+    // scan runs (the scan progress itself is shown in the load-game style
+    // UIProgressBox dialog, see build())
+    rect->setVisibility(Visibility::Hidden);
 
     text = new Text();
     ui->getSkin()->loadText(text, {"ROM_LIST", "TEXT"});
@@ -57,31 +48,102 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
     p_cb = cb;
     m_count = 0;
 
-    //ui->flip();
+    // fast path: load the rom list cache from a previous successful scan.
+    // the cache contains the already-enriched game list, so no rescan and no
+    // per-rom driver lookup is needed.
+    bool scanned = true;
+    if (!m_forceRescan && gameList->loadBinary(getCachePath())) {
+        scanned = false;
+        printf("RomList::build: loaded %zu games from cache\n", gameList->games.size());
+    }
 
-    auto romPaths = cfg->getRomPaths();
-    for (const auto &p: romPaths) {
-        std::string gameListPath = p.path + "gamelist.xml";
-        // gameList->append(gameListPath, p.path, false, filters, p.system, false, [this](Game *game) {
-		// superxyj modified, reduce scanning time by loading only the rom files exists
-        gameList->append(gameListPath, p.path, false, filters, p.system, true, [this](Game *game) {
-            if (p_cb) p_cb(game);
-            // count only the roms that will actually be kept in the list,
-            // so the scan counter matches the listbox count (roms that the
-            // core driver does not support, bios zips, etc. are excluded)
-            if (isGameSupported(*game)) {
-                m_count++;
-                // update the scan counter on every rom (no more %10 batching:
-                // the counter is part of the on-screen loading text, so it
-                // should tick continuously instead of jumping by tens)
-                setLoadingText(TEXT_MSG_GAMES_SEARCH, m_count);
+    if (scanned) {
+        ui->getIo()->create(getCacheDir());
+
+        // reset any previously loaded/cached data before the rescan
+        gameList->clear();
+
+        // blur the main ui behind the scan dialog (like the menu does); on
+        // the first startup scan the rom list does not exist yet -> nothing
+        // to blur, the dialog just sits on the plain background
+        auto *uiRomList = ui->getUiRomList();
+        if (uiRomList) {
+            uiRomList->getBlur()->setVisibility(Visibility::Visible, true);
+        }
+
+        // reuse the load-game style progress dialog for the scan
+        auto *progressBox = ui->getUiProgressBox();
+        if (progressBox) {
+            progressBox->setTitle(TEXT_MSG_SCANNING_TITLE);
+            progressBox->setMessage("");
+            progressBox->setProgress(0);
+            progressBox->setVisibility(Visibility::Visible);
+            progressBox->setLayer(1000);
+        }
+        ui->flip();
+
+        auto romPaths = cfg->getRomPaths();
+
+        // merge all systems into one continuous scan: pre-count every rom
+        // directory first, then run the per-system appends back to back so
+        // the single progress dialog never resets between systems (no flicker)
+        size_t total = 0;
+        for (const auto &p: romPaths) {
+            auto files = ss_api::Io::getDirList(p.path, false, filters);
+            total += files.size();
+        }
+
+        size_t scannedFiles = 0;
+        for (const auto &p: romPaths) {
+            // quitting mid-scan: abort (the partial result is discarded, the
+            // previous cache file is left untouched)
+            if (ui->done) {
+                break;
             }
-        });
-        //setLoadingText(TEXT_MSG_GAMES_SEARCH, m_games_available_count, m_games_count);
-		setLoadingText(TEXT_MSG_GAMES_SEARCH, m_count);
-        printf("RomList::build: %s, games found: %zu / %zu (system: %s (0x%08x))\n",
-               gameListPath.c_str(), gameList->getAvailableCount(),
-               gameList->games.size(), p.system.name.c_str(), p.system.id);
+
+            // scan this system's rom directory (gamelist.xml matching removed,
+            // enrichment happens in the core build callback below)
+            gameList->append("", p.path, false, filters, p.system, true, [this, total, &scannedFiles, progressBox](Game *game) {
+                // abort requested: skip the expensive enrichment/driver lookup,
+                // the remaining files are then processed at near-zero cost
+                if (ui->done) {
+                    return;
+                }
+                scannedFiles++;
+                if (p_cb) p_cb(game);
+                // count only the roms that will actually be kept in the list,
+                // so the scan counter matches the listbox count (roms that the
+                // core driver does not support, bios zips, etc. are excluded)
+                if (isGameSupported(*game)) {
+                    m_count++;
+                }
+                if (progressBox) {
+                    char msg[256];
+                    snprintf(msg, sizeof(msg), TEXT_MSG_SCANNING_COUNT, (long) m_count);
+                    progressBox->setMessage(msg);
+                    progressBox->setProgress(total ? (float) scannedFiles / (float) total : 0.f);
+                }
+                ui->flip();
+            });
+            printf("RomList::build: %s, games found: %zu / %zu (system: %s (0x%08x))\n",
+                   p.path.c_str(), gameList->getAvailableCount(),
+                   gameList->games.size(), p.system.name.c_str(), p.system.id);
+        }
+
+        if (progressBox) {
+            progressBox->setVisibility(Visibility::Hidden);
+        }
+        if (uiRomList) {
+            uiRomList->getBlur()->setVisibility(Visibility::Hidden, true);
+        }
+
+        // save the scan result only after a COMPLETE scan: quitting mid-scan
+        // (ui->done set) leaves the previous good cache untouched.
+        if (!ui->done) {
+            saveCache();
+        }
+
+        m_forceRescan = false;
     }
 
     // sort games
@@ -96,11 +158,15 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
     std::sort(gameList->resolutions.begin(), gameList->resolutions.end(), Api::sortByName);
     std::sort(gameList->dates.begin(), gameList->dates.end(), Api::sortByName);
 
-    // add filtering options
+    // add filtering options (only once: a rescan must not duplicate the option)
     printf("RomList::build: add filtering options...\n");
     auto grp = cfg->getGroup(PEMUConfig::GrpId::UI_FILTERING);
-    grp->addOption({"FILTER_SYSTEM", gameList->systemList.getNames(), 0,
-                    PEMUConfig::OptId::UI_FILTER_SYSTEM, "", TEXT_MENU_FILTER_SYSTEM})->setFlags(PEMUConfig::Flags::HIDDEN);
+    if (!grp->getOption(PEMUConfig::OptId::UI_FILTER_SYSTEM)) {
+        grp->addOption({"FILTER_SYSTEM", gameList->systemList.getNames(), 0,
+                        PEMUConfig::OptId::UI_FILTER_SYSTEM, "", TEXT_MENU_FILTER_SYSTEM})->setFlags(PEMUConfig::Flags::HIDDEN);
+    } else {
+        grp->getOption(PEMUConfig::OptId::UI_FILTER_SYSTEM)->setArray(gameList->systemList.getNames());
+    }
 	//superxyj added, to remove these infrequently used filters
     //grp->getOption(PEMUConfig::OptId::UI_FILTER_SYSTEM)->setArray(gameList->systemList.getNames(), 0);
     //grp->getOption(PEMUConfig::OptId::UI_FILTER_GENRE)->setArray(gameList->getGenreNames(), 0);
@@ -131,7 +197,8 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
     // 几百行文本会造成明显的首帧卡顿/花屏。预热把这些开销全部移进当前
     // 的"正在搜索游戏"加载界面里消化掉，显示时就全走缓存。
     // =====================================================================
-    {
+    // (skipped when the scan was aborted by the user quitting)
+    if (!ui->done) {
         printf("RomList::build: precaching font glyphs...\n");
         std::string allText;
         for (const auto &g : gameList->games) {
@@ -161,8 +228,9 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
         }
     }
 
-    // remove ui widgets
-    delete (rect);
+    // hide the loading screen instead of deleting it: a later manual rescan
+    // (main menu "scan roms") reuses the same rect/text/progress bar widgets.
+    rect->setVisibility(Visibility::Hidden);
 }
 
 void RomList::initFav() {
@@ -203,6 +271,22 @@ void RomList::setLoadingText(const char *format, ...) {
 
     text->setString(buffer);
     ui->flip();
+}
+
+std::string RomList::getCacheDir() const {
+    return ui->getIo()->getDataPath() + "cache/";
+}
+
+std::string RomList::getCachePath() const {
+    return getCacheDir() + "romlist_cache.bin";
+}
+
+bool RomList::saveCache() {
+    return gameList->saveBinary(getCachePath());
+}
+
+bool RomList::loadCache() {
+    return gameList->loadBinary(getCachePath());
 }
 
 RomList::~RomList() {

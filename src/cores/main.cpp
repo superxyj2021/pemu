@@ -139,6 +139,12 @@ int main(int argc, char **argv) {
     const auto skin = new PEMUSkin(pemu_ui);
     pemu_ui->setSkin(skin);
 
+    // startup splash: shown as early as possible (right after the skin, which
+    // provides the title texture), then presented for the full minimum
+    // duration so it reads as a proper boot splash before any ui shows up.
+    pemu_ui->showSplash();
+    pemu_ui->presentSplash();
+
     // donate.png integrity check (locks roms and trims the +/- menus on tamper)
     checkDonateIntegrity(io);
 
@@ -157,14 +163,11 @@ int main(int argc, char **argv) {
         }
     }
 
-    // ui
+    // ui: create and attach everything BEFORE the rom list build, so the main
+    // ui (rom list) is on screen first and the scan progress dialog appears
+    // on top of the blurred rom list exactly like the menu-triggered rescan -
+    // even on the very first scan (no black background).
     const auto romList = new PEMURomList(pemu_ui, cfg->getCoreVersion(), cfg->getCoreSupportedExt());
-    if (game.path.empty()) {
-        romList->build();
-        romList->initFav();
-    } else {
-        delete (romList->rect);
-    }
     const auto uiRomList = new PEMUUiRomList(pemu_ui, romList, pemu_ui->getSize());
     const auto uiMenu = new PEMUUiMenu(pemu_ui);
     const auto uiEmu = new PEMUUiEmu(pemu_ui);
@@ -181,8 +184,20 @@ int main(int argc, char **argv) {
     // reason - must happen after init, not from an input callback.
     uiMenu->attachDonateDialog();
 
-    // load specified game from command line if requested
-    if (!game.path.empty()) {
+    if (game.path.empty()) {
+        // load the rom list: from cache when available, otherwise a full scan.
+        // the scan runs synchronously with the progress dialog over the rom
+        // list that is already on screen (init() above); the previous cache is
+        // only replaced when the scan completes.
+        romList->build();
+        if (!pemu_ui->done) {
+            romList->initFav();
+            uiRomList->updateRomList();
+        }
+    } else {
+        // load specified game from command line if requested
+        pemu_ui->remove(romList->rect);
+        delete (romList->rect);
         uiRomList->setVisibility(Visibility::Hidden);
         uiRomList->setGames({game});
         cfg->loadGame(game);

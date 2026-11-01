@@ -169,6 +169,13 @@ void UIRomInfo::load(const Game &game) {
 UIRomInfo::~UIRomInfo() {
     printf("~UIRomInfo\n");
 #ifdef __MPV__
-    delete (mpv);
+    if (mpv) {
+        // stop any pending video playback before tearing down the render
+        // context (mpv_render_context_free runs on this thread and can touch
+        // GL state; a still-playing video would be cut mid-render)
+        mpv->stop();
+        delete (mpv);
+        mpv = nullptr;
+    }
 #endif
 }

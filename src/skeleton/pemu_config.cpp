@@ -23,7 +23,11 @@ PEMUConfig::PEMUConfig(Renderer *renderer, const std::string &name, int version)
     ui_filtering.addOption({"FILTER_FAVORITES", {"OFF", "ON"}, 0, UI_FILTER_FAVORITES, "", TEXT_MENU_FILTER_FAVORITES});
     //ui_filtering.addOption({"FILTER_MISSING", {"OFF", "ON"}, 1, UI_FILTER_AVAILABLE, "", TEXT_MENU_FILTER_MISSING});
     ui_filtering.addOption({"FILTER_CLONES", {"OFF", "ON"}, 1, UI_FILTER_CLONES, "", TEXT_MENU_FILTER_CLONES})->setFlags(HIDDEN);
-    //ui_filtering.addOption({"FILTER_SYSTEM", {"ALL"}, 0, UI_FILTER_SYSTEM})->setFlags(HIDDEN);
+    // created here (with a default "ALL" array) so the option always exists
+    // even before the first rom list build: the rom list ui is now attached
+    // before the scan runs and reads this option at startup. the array is
+    // replaced with the real system names by RomList::build().
+    ui_filtering.addOption({"FILTER_SYSTEM", {"ALL"}, 0, UI_FILTER_SYSTEM, "", TEXT_MENU_FILTER_SYSTEM})->setFlags(HIDDEN);
     //ui_filtering.addOption({"FILTER_GENRE", {"ALL"}, 0, UI_FILTER_GENRE});
     //ui_filtering.addOption({"FILTER_DATE", {"ALL"}, 0, UI_FILTER_DATE});
     //ui_filtering.addOption({"FILTER_EDITOR", {"ALL"}, 0, UI_FILTER_EDITOR});
@@ -34,8 +38,11 @@ PEMUConfig::PEMUConfig(Renderer *renderer, const std::string &name, int version)
 
     /// UI_OPTIONS
     Group main("UI_OPTIONS", UI_OPTIONS, TEXT_MENU_UI_OPTIONS);
-    main.addOption({"SHOW_ZIP_NAMES", {"OFF", "ON"}, 1, UI_SHOW_ZIP_NAMES, "", TEXT_MENU_SHOW_ZIP_NAMES});
-#ifdef __FULLSCREEN__
+    main.addOption({"SHOW_ZIP_NAMES", {"OFF", "ON"}, 0, UI_SHOW_ZIP_NAMES, "", TEXT_MENU_SHOW_ZIP_NAMES});
+#if defined(__FULLSCREEN__) && !defined(__SWITCH__)
+    // fullscreen toggle is meaningless on switch: the app always fills the
+    // screen (SDL2_switch presents the GL surface fullscreen), so the option
+    // would only show a no-op entry (see SDL2Renderer::setFullscreen)
     main.addOption({"FULLSCREEN", {"OFF", "ON"}, 1, UI_FULLSCREEN, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_FULLSCREEN});
 #endif
     Vector2i displaySize = C2DDevice::getDisplaySize();
@@ -108,7 +115,7 @@ PEMUConfig::PEMUConfig(Renderer *renderer, const std::string &name, int version)
         emu_grp.addOption({"SCALING", {"NONE", "FIT", "FULL"}, 1, EMU_SCALING, "", TEXT_MENU_SCALING});
     }
 
-    emu_grp.addOption({"SCALING_MODE", {"AUTO", "ASPECT", "INTEGER"}, 1, EMU_SCALING_MODE, "", TEXT_MENU_SCALING_MODE});
+    emu_grp.addOption({"SCALING_MODE", {"AUTO", "ASPECT", "INTEGER"}, 0, EMU_SCALING_MODE, "", TEXT_MENU_SCALING_MODE});
     emu_grp.addOption({"FILTER", {std::string("POINT"), std::string("LINEAR")}, 1, EMU_FILTER, "", TEXT_MENU_FILTER});
     if (const auto shaderList = p_renderer->getShaderList()) {
         emu_grp.addOption({"EFFECT", shaderList->getNames(), 0, EMU_SHADER, "", TEXT_MENU_EFFECT});
@@ -120,14 +127,9 @@ PEMUConfig::PEMUConfig(Renderer *renderer, const std::string &name, int version)
     emu_grp.addOption({"WAIT_RENDERING", {"OFF", "ON"}, 1, EMU_WAIT_RENDERING, "", TEXT_MENU_WAIT_RENDERING});
 #endif
     emu_grp.addOption({"SHOW_FPS", {"OFF", "ON"}, 0, EMU_SHOW_FPS, "", TEXT_MENU_SHOW_FPS});
-#ifdef __SWITCH__
-    // emulation performance mode: 0 = power save (stock clocks), 1 = full speed
-    // (cpu max + gpu 460mhz on game load). default is full speed.
-    emu_grp.addOption({
-        "PERF_MODE", {TEXT_MENU_EMU_PERF_SAVE, TEXT_MENU_EMU_PERF_FULL}, 1,
-        EMU_PERF_MODE, "", TEXT_MENU_EMU_PERF
-    });
-#endif
+    // NOTE: the switch emulation performance mode option (EMU_PERF_MODE) is
+    // added by the pfbneo core config right after the FRAMESKIP option so it
+    // appears in that position in the emulation menu.
     addGroup(emu_grp);
 
     /*

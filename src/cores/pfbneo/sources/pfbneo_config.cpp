@@ -19,8 +19,20 @@ PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(rende
 
     c2d::Io *io = renderer->getIo();
 
+    // unhide core options (UI_FILTER_SYSTEM / UI_FILTER_CLONES) here, not just
+    // in RomList::build(): the rom list ui is now attached before the first
+    // scan runs, and it reads the flags at startup to decide whether to show
+    // the system text and enable the LT/RT system switching.
+    for (const auto &id: getCoreHiddenOptionToEnable()) {
+        get(id)->setFlags(0);
+    }
+
     /// MAIN OPTIONS
-    get(UI_SHOW_ZIP_NAMES)->setArrayIndex(0);
+    // hide menu entries that don't make sense on this build: only the default
+    // skin is shipped, and font scaling is a debug tweak. hidden (not removed)
+    // because skin.cpp reads both options at startup.
+    get(UI_SKIN)->setFlags(PEMUConfig::Flags::HIDDEN);
+    get(UI_FONT_SCALING)->setFlags(PEMUConfig::Flags::HIDDEN);
 
     /// ROMS OPTIONS
     const auto group = getGroup(EMULATION);
@@ -34,8 +46,11 @@ PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(rende
                       3, EMU_AUDIO_FREQ, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_AUDIO_FREQUENCY});
     group->addOption({"AUDIO_INTERPOLATION", {"0", "1", "3"},
                       2, EMU_AUDIO_INTERPOLATION, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_AUDIO_INTERPOLATION});
+    // FM synthesis chips (YM2612/YM3526): value 3 runs the FM core at the real
+    // hardware clock and resamples (best quality, high CPU cost), 0/1 runs it
+    // directly at the output rate (fast). default 0 = performance priority.
     group->addOption({"AUDIO_FM_INTERPOLATION", {"0", "1", "3"},
-                      2, EMU_AUDIO_FMINTERPOLATION, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_AUDIO_FM_INTERPOLATION});
+                      0, EMU_AUDIO_FMINTERPOLATION, TEXT_MSG_AUDIO_FM_INTERPOLATION, TEXT_MENU_AUDIO_FM_INTERPOLATION});
 #ifdef __VITA__
     group->addOption({"ROTATION", {"OFF", "ON", "FLIP", "CAB MODE"},
                       1, EMU_ROTATION, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_ROTATION});
@@ -59,10 +74,20 @@ PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(rende
     // read live every frame, no restart needed.
     group->addOption({"FRAMESKIP", {"OFF", "自动", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
                       1, EMU_FRAMESKIP, "", TEXT_MENU_FRAMESKIP});
+#ifdef __SWITCH__
+    // emulation performance mode: 0 = power save (stock clocks), 1 = full speed
+    // (cpu max + gpu 460mhz on game load). default is full speed.
+    // placed right after FRAMESKIP so it appears below it in the menu.
+    group->addOption({
+        "PERF_MODE", {TEXT_MENU_EMU_PERF_SAVE, TEXT_MENU_EMU_PERF_FULL}, 1,
+        EMU_PERF_MODE, "", TEXT_MENU_EMU_PERF
+    });
+#endif
 #endif
 
-#if defined(__PS4__) || defined(ANDROID)
-    // force 48000hz audio output
+#if defined(__PS4__) || defined(ANDROID) || defined(__SWITCH__)
+    // force 48000hz audio output (matches the switch/ps4/android audio hw,
+    // avoids an extra resample step from the 44100 default)
     get(EMU_AUDIO_FREQ)->setArrayIndex(4);
     get(EMU_AUDIO_FREQ)->setFlags(PEMUConfig::Flags::HIDDEN);
 #endif

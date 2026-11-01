@@ -242,7 +242,8 @@ void UIRomList::setVisibility(c2d::Visibility visibility, bool tweenPlay) {
 }
 
 bool UIRomList::onInput(c2d::Input::Player *players) {
-    if (pMain->getUiMenu()->isVisible()
+    if (mPendingLoad
+        || pMain->getUiMenu()->isVisible()
         || pMain->getUiMenu()->isDonateDialogOpen()
         || pMain->getUiStateMenu()->isVisible()
         || pMain->getUiProgressBox()->isVisible()) {
@@ -278,7 +279,12 @@ bool UIRomList::onInput(c2d::Input::Player *players) {
             pRomInfo->mpv->stop();
 #endif
             pMain->getConfig()->loadGame(game);
-            pMain->getUiEmu()->load(game);
+            // blur the main ui while the game loads; the actual load (and its
+            // progress box) is deferred to onUpdate() until the blur has fully
+            // faded in, so the box does not pop over a still-bright rom list
+            getBlur()->setVisibility(Visibility::Visible, true);
+            mPendingGame = game;
+            mPendingLoad = true;
             return true;
         }
     } else if (buttons & Input::Button::X) {
@@ -349,6 +355,17 @@ bool UIRomList::onInput(c2d::Input::Player *players) {
 
 void UIRomList::onUpdate() {
     if (!isVisible() || pMain->getUiProgressBox()->isVisible()) {
+        return;
+    }
+
+    // a game was selected: wait for the blur to finish fading in, then start
+    // the actual load so the progress box appears over the blurred rom list
+    if (mPendingLoad) {
+        if (getBlur()->getAlpha() < 229) {
+            return;
+        }
+        mPendingLoad = false;
+        pMain->getUiEmu()->load(mPendingGame);
         return;
     }
 

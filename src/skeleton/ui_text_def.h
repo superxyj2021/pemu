@@ -101,6 +101,11 @@
 #define TEXT_OTHER                                      "OTHER"
 #define TEXT_STATES                                     "STATES"
 #define TEXT_GO                                         "GO"
+#define TEXT_SCAN_ROMS                                  "SCAN ROMS"
+
+// scanning overlay
+#define TEXT_MSG_SCANNING_TITLE                         "SCANNING ROMS, PLEASE WAIT..."
+#define TEXT_MSG_SCANNING_COUNT                         "%li GAMES FOUND"
 
 // misc
 #define TEXT_SLOT                                       "SLOT"
@@ -312,7 +317,7 @@
 // pfbneo turbo (auto-fire) options
 #define TEXT_MENU_TURBO                                 "连发设置"
 #define TEXT_MENU_TURBO_RATE                            "连发速率"
-#define TEXT_MENU_TURBO_HINT  							"连发速率：4Hz最慢，30Hz最快，默认15Hz"
+#define TEXT_MENU_TURBO_HINT  							"连发速率：4Hz最慢，30Hz最快，默认8Hz"
 #define TEXT_MENU_TURBO_A                               "连发 A"
 #define TEXT_MENU_TURBO_B                               "连发 B"
 #define TEXT_MENU_TURBO_X                               "连发 X"
@@ -336,6 +341,11 @@
 #define TEXT_STATES                                     "存档"
 #define TEXT_QUIT                                       "退出"
 #define TEXT_GO                                         "执行"
+#define TEXT_SCAN_ROMS                                  "扫描ROM"
+
+// scanning overlay
+#define TEXT_MSG_SCANNING_TITLE                         "正在扫描ROM，请耐心等待..."
+#define TEXT_MSG_SCANNING_COUNT                         "已发现 %li 个游戏"
 
 // misc
 #define TEXT_SLOT                                       "存档位"
@@ -351,6 +361,7 @@
 #define TEXT_MENU_AUDIO_FREQUENCY                       "音频采样"
 #define TEXT_MENU_AUDIO_INTERPOLATION                   "音频插值"
 #define TEXT_MENU_AUDIO_FM_INTERPOLATION                "音频FM插值"
+#define TEXT_MSG_AUDIO_FM_INTERPOLATION                 "音质换性能：3=FM按硬件时钟重采样，音质最佳但CPU开销大；0/1=按输出采样率直接运算，更省CPU。更改后需重启模拟生效"
 #define TEXT_MENU_ROTATION                              "屏幕旋转"
 #define TEXT_MENU_NEOBIOS                               "NEOBIOS"
 #define TEXT_MENU_FRAMESKIP                             "跳帧"

@@ -183,7 +183,7 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
     // then kept moving by the throttled flip() in ProgressUpdateBurner.
     {
         auto gameInfo = PFBNEOUtility::getGameInfo(currentGame,
-                                                   pMain->getIo()->getRomFsPath() + "langs/gamelist.bin");
+                                                   pMain->getIo()->getDataPath() + "localisation/Chinese (Simplified)_gamelist.glt");
         auto *progressBox = pMain->getUiProgressBox();
         progressBox->setTitle(gameInfo.name.empty() ? currentGame.name : gameInfo.name);
         progressBox->setMessage(TEXT_MSG_PLEASE_WAIT);
@@ -343,6 +343,7 @@ void PFBAUiEmu::stop() {
     DrvExit();
     if (pBurnSoundOut) {
         free(pBurnSoundOut);
+        pBurnSoundOut = nullptr;
     }
     UiEmu::stop();
 }

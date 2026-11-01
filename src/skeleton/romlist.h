@@ -29,6 +29,11 @@ namespace pemu {
 
         virtual void initFav();
 
+        // force a full rescan on the next build() (used by the "scan roms"
+        // main menu item); the previous cache is only replaced after the new
+        // scan completes.
+        void setForceRescan(bool force) { m_forceRescan = force; }
+
         void addFav(const ss_api::Game &game);
 
         void removeFav(const ss_api::Game &game);
@@ -43,8 +48,18 @@ namespace pemu {
         ss_api::GameList::GameAddedCb p_cb = nullptr;
 
     protected:
+        // cache file lives next to the nro: <dataPath>/cache/romlist_cache.bin
+        std::string getCacheDir() const;
+
+        std::string getCachePath() const;
+
+        bool saveCache();
+
+        bool loadCache();
+
         std::vector<std::string> filters;
         size_t m_count = 0;
+        bool m_forceRescan = false;
     };
 }
 

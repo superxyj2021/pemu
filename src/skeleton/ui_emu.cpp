@@ -128,6 +128,11 @@ void UiEmu::stop() {
     ((PSP2Renderer *) pMain)->setWaitRendering(true);
 #endif
 
+    // clear the load-time blur overlay (also reached on failed game loads)
+    if (pMain->getUiRomList()) {
+        pMain->getUiRomList()->getBlur()->setVisibility(Visibility::Hidden);
+    }
+
     pMain->updateInputMapping(false);
     setVisibility(Visibility::Hidden);
 
