@@ -51,6 +51,10 @@ private:
     int m_autoFastFrames = 0;
     int m_autoFrameskip = 0;
 
+    // cached Option pointers for per-frame config lookups (the option list is
+    // scanned linearly; the pointers stay valid for the whole session)
+    c2d::config::Option *m_frameskipOpt = nullptr;
+
     C2DClock clock;
 };
 

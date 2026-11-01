@@ -158,8 +158,8 @@ void UIListBox::updateLines() {
             lines[i]->setVisibility(Visibility::Hidden);
             lines[i]->getText()->setScrollEnabled(false);
         } else {
-            // set file
-            Game game = games[file_index + i];
+            // set file (const ref: no per-line Game deep copy on every keypress)
+            const Game &game = games[file_index + i];
             lines[i]->setVisibility(Visibility::Visible);
             lines[i]->setString(useZipName ? Utility::removeExt(game.path) : game.name);
             // marquee scroll: only the highlighted (selected) line scrolls,
@@ -305,8 +305,11 @@ void UIListBox::setSize(float width, float height) {
     }
 }
 
-void UIListBox::setGames(const std::vector<ss_api::Game> &g) {
-    games = g;
+void UIListBox::setGames(std::vector<ss_api::Game> g) {
+    // move instead of deep-copy: the caller (rom list filter) hands over the
+    // freshly filtered list, so no per-game string copies on system/filter
+    // switches
+    games = std::move(g);
 
     if (!lines.empty()) {
         setSelection(0);

@@ -30,6 +30,8 @@ public:
     pemu::UiMain *main = nullptr;
     pemu::UIRomList *uiRomList = nullptr;
     c2d::C2DTexture *texture = nullptr;
+    std::string mTexturePath;
+    c2d::Tween *mPreviewFade = nullptr;
     c2d::Font *font;
     int fontSize;
     //

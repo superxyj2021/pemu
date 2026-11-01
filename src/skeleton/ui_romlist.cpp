@@ -104,17 +104,32 @@ std::string UIRomList::getPreview(const Game &game, UIRomList::PreviewType type)
     std::string mediaType = type == Tex ? "mixrbv2" : "video";
     std::string mediaExt = type == Tex ? ".png" : ".mp4";
 
+    // cache the last query (game + type): revisiting the same game skips all
+    // the filesystem probing below (up to 8 stat() + string builds per call)
+    std::string key = game.romsPath + "|" + game.path + "|" + mediaType;
+    if (mPreviewQueryKey == key) {
+        return mPreviewResult;
+    }
+
     // try media path from database
     std::string path = game.romsPath + game.getMedia(mediaType).url;
+#ifndef NDEBUG
     printf("getPreview(%s)\n", path.c_str());
+#endif
     if (pMain->getIo()->getFile(path).isFile()) {
+        mPreviewQueryKey = key;
+        mPreviewResult = path;
         return path;
     }
 
     // try from filename
     path = game.romsPath + "media/" + mediaType + "/" + Utility::removeExt(game.path) + mediaExt;
+#ifndef NDEBUG
     printf("getPreview(%s)\n", path.c_str());
+#endif
     if (pMain->getIo()->getFile(path).isFile()) {
+        mPreviewQueryKey = key;
+        mPreviewResult = path;
         return path;
     }
 
@@ -123,8 +138,12 @@ std::string UIRomList::getPreview(const Game &game, UIRomList::PreviewType type)
         std::vector<Game> clones = pRomList->gameList->findGamesByName(game);
         for (const auto &g: clones) {
             path = g.romsPath + g.getMedia(mediaType).url;
+#ifndef NDEBUG
             printf("getPreview(%s)\n", path.c_str());
+#endif
             if (pMain->getIo()->getFile(path).isFile()) {
+                mPreviewQueryKey = key;
+                mPreviewResult = path;
                 return path;
             }
         }
@@ -134,18 +153,28 @@ std::string UIRomList::getPreview(const Game &game, UIRomList::PreviewType type)
     if (game.isClone()) {
         Game parent = pRomList->gameList->findGameByPath(game.cloneOf);
         path = parent.romsPath + parent.getMedia(mediaType).url;
+#ifndef NDEBUG
         printf("getPreview(%s)\n", path.c_str());
+#endif
         if (pMain->getIo()->getFile(path).isFile()) {
+            mPreviewQueryKey = key;
+            mPreviewResult = path;
             return path;
         }
         // try from filename
         path = parent.romsPath + "media/" + mediaType + "/" + Utility::removeExt(parent.path) + mediaExt;
+#ifndef NDEBUG
         printf("getPreview(%s)\n", path.c_str());
+#endif
         if (pMain->getIo()->getFile(path).isFile()) {
+            mPreviewQueryKey = key;
+            mPreviewResult = path;
             return path;
         }
     }
 
+    mPreviewQueryKey = key;
+    mPreviewResult = {};
     return {};
 }
 
@@ -168,7 +197,8 @@ void UIRomList::updateRomList() {
     }
 
     if (pListBox) {
-        pListBox->setGames(mGameList.games);
+        // hand over ownership of the filtered list (no deep copy)
+        pListBox->setGames(std::move(mGameList.games));
     }
 
     if (pRomInfo) {
@@ -325,7 +355,7 @@ bool UIRomList::onInput(c2d::Input::Player *players) {
 				{
                 	sysOpt->setArrayMovePrev();
                 	updateRomList();
-					if(!mGameList.games.empty())
+					if(pListBox->getGamesCount() > 0)
 						return true;
 				}
 				// no available system, set system to all
@@ -340,7 +370,7 @@ bool UIRomList::onInput(c2d::Input::Player *players) {
 				{
                 	sysOpt->setArrayMoveNext();
                	 	updateRomList();
-					if(!mGameList.games.empty())
+					if(pListBox->getGamesCount() > 0)
 						return true;
 				}
 				// no available system, set system to all

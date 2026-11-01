@@ -110,17 +110,30 @@ bool UIRomInfo::loadTexture(const Game &game) {
     std::string path = game.path.empty() ? "" : uiRomList->getPreview(game, UIRomList::PreviewType::Tex);
     // set image
     if (!path.empty()) {
-        delete (texture);
-        texture = new C2DTexture(path);
-        texture->setOrigin(Origin::Center);
-        texture->setPosition(Vector2f(previewBox->getSize().x / 2, previewBox->getSize().y / 2));
-        float tex_scaling = std::min(
-                previewBox->getSize().x / (float) texture->getTextureRect().width,
-                previewBox->getSize().y / (float) texture->getTextureRect().height);
-        texture->setScale(tex_scaling, tex_scaling);
-        texture->setAlpha(0);
-        texture->add(new TweenAlpha(0, 255, 0.3f, TweenLoop::None, TweenState::Playing));
-        previewBox->add(texture);
+        if (texture && path == mTexturePath) {
+            // same preview as currently loaded: reuse it (no PNG decode / GL
+            // upload) and just fade it back in
+            texture->setVisibility(Visibility::Visible);
+            texture->setAlpha(0);
+            if (mPreviewFade) {
+                mPreviewFade->play(TweenDirection::Forward, true);
+            }
+        } else {
+            delete (texture);
+            texture = new C2DTexture(path);
+            mTexturePath = path;
+            mPreviewFade = nullptr;
+            texture->setOrigin(Origin::Center);
+            texture->setPosition(Vector2f(previewBox->getSize().x / 2, previewBox->getSize().y / 2));
+            float tex_scaling = std::min(
+                    previewBox->getSize().x / (float) texture->getTextureRect().width,
+                    previewBox->getSize().y / (float) texture->getTextureRect().height);
+            texture->setScale(tex_scaling, tex_scaling);
+            texture->setAlpha(0);
+            mPreviewFade = new TweenAlpha(0, 255, 0.3f, TweenLoop::None, TweenState::Playing);
+            texture->add(mPreviewFade);
+            previewBox->add(texture);
+        }
     } else {
         if (texture && texture->isVisible()) {
             texture->setVisibility(Visibility::Hidden, true);
@@ -150,7 +163,9 @@ void UIRomInfo::load(const Game &game) {
         mpv->stop();
 #endif
     } else {
+#ifndef NDEBUG
         printf("UIRomInfo::load(%s)\n", game.name.c_str());
+#endif
         // load title/preview texture
         loadTexture(game);
         showText(systemText, TEXT_ROMINFO_SYSTEM + game.system.name);

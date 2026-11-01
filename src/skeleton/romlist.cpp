@@ -201,6 +201,7 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
     if (!ui->done) {
         printf("RomList::build: precaching font glyphs...\n");
         std::string allText;
+        allText.reserve(gameList->games.size() * 32);
         for (const auto &g : gameList->games) {
             allText += g.name;
             allText += g.editor.name;
@@ -212,18 +213,23 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
         }
         auto *font = ui->getSkin()->getFont();
         if (font && !allText.empty()) {
+            // the rom list text is drawn with an outline (skin ROM_LIST >
+            // outline_size, usually 2.0); precache with the same thickness so
+            // the stroked glyph variants are not lazily rasterized on the
+            // very first frame the list is shown
+            const float outline = text->getOutlineThickness() > 0.f ? text->getOutlineThickness() : 0.f;
             // ROM_LIST > TEXT (rom 行文本，主场景)
-            font->precacheText(allText, text->getCharacterSize(), false, 0.f);
+            font->precacheText(allText, text->getCharacterSize(), false, outline);
             // ROM_INFOS 信息面板与 ROM_LIST 标题的字号都从 skin 配置动态
             // 读取（getText 返回的 size 已含皮肤缩放），避免硬编码与配置
             // 不同步（缺配置时 size 为 0，跳过即可）
             auto infoSize = ui->getSkin()->getText({"ROM_INFOS", "SYSTEM_TEXT"}).size;
             auto titleSize = ui->getSkin()->getText({"ROM_LIST", "SYSTEM_TEXT"}).size;
             if (infoSize > 0) {
-                font->precacheText(allText, infoSize, false, 0.f);
+                font->precacheText(allText, infoSize, false, outline);
             }
-            if (titleSize > 0) {
-                font->precacheText(allText, titleSize, false, 0.f);
+            if (titleSize > 0 && titleSize != infoSize) {
+                font->precacheText(allText, titleSize, false, outline);
             }
         }
     }

@@ -68,6 +68,8 @@ namespace pemu {
         int mTimerLoadVideoDone = 0;
         ss_api::Game mPendingGame;
         bool mPendingLoad = false;
+        std::string mPreviewQueryKey;
+        std::string mPreviewResult;
     };
 }
 

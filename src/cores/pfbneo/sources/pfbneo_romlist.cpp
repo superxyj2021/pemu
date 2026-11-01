@@ -7,17 +7,46 @@
 #include "pfbneo_utility.h"
 #include "burner.h"
 
+#include <unordered_map>
+#include <unordered_set>
+
 using namespace c2d;
 using namespace pemu;
 
 void PFBNRomList::build(const ss_api::GameList::GameAddedCb &cb) {
     float time_start = ui->getElapsedTime().asSeconds();
+
+    // per-scan media directory cache: one getDirList() per rom folder instead
+    // of up to 4 access() syscalls per game (thousands of games -> tens of
+    // thousands of filesystem hits on slow sd during a scan)
+    struct MediaCache {
+        std::unordered_set<std::string> images;
+        std::unordered_set<std::string> videos;
+        bool loaded = false;
+    };
+    std::unordered_map<std::string, MediaCache> mediaCache;
+    auto getMediaCache = [&mediaCache, this](const std::string &romsPath) -> MediaCache & {
+        auto &cache = mediaCache[romsPath];
+        if (!cache.loaded) {
+            cache.loaded = true;
+            auto imgList = ui->getIo()->getDirList(romsPath + "media/images", false, {".png"});
+            for (const auto &f : imgList) {
+                cache.images.insert(f.name);
+            }
+            auto vidList = ui->getIo()->getDirList(romsPath + "media/videos", false, {".mp4"});
+            for (const auto &f : vidList) {
+                cache.videos.insert(f.name);
+            }
+        }
+        return cache;
+    };
+
     // build rom list
-    RomList::build([this](Game *game) {
+    RomList::build([this, &getMediaCache](Game *game) {
         auto cfgSys = game->system;
         PFBNEOUtility::GameInfo gameInfo = PFBNEOUtility::getGameInfo(
                 *game,
-                ui->getIo()->getDataPath() + "localisation/Chinese (Simplified)_gamelist.glt");
+                PFBNEOUtility::getChineseTxtPath(ui->getIo()));
 #if 0
         printf("game: %s, path: %s, fbneo system: %s (0x%08x), core system: %s (0x%08x)\n",
                game->path.c_str(), game->romsPath.c_str(),
@@ -152,12 +181,13 @@ void PFBNRomList::build(const ss_api::GameList::GameAddedCb &cb) {
 
 		// [MODIFIED] 图片：先试游戏自身文件名，不存在再试父 rom 名，都存在才 push
 		if (!hasImage) {
+			auto &cache = getMediaCache(game->romsPath);
 			std::string imagePath = "./media/images/" + zipName + ".png";
-			if (access((game->romsPath + imagePath).c_str(), F_OK) != 0) {
+			if (cache.images.count(zipName + ".png") == 0) {
 				imagePath.clear();
 				if (!gameInfo.parent.empty()) {
 					std::string parentPath = "./media/images/" + gameInfo.parent + ".png";
-					if (access((game->romsPath + parentPath).c_str(), F_OK) == 0) {
+					if (cache.images.count(gameInfo.parent + ".png") > 0) {
 						imagePath = parentPath;
 					}
 				}
@@ -169,12 +199,13 @@ void PFBNRomList::build(const ss_api::GameList::GameAddedCb &cb) {
 
 		// [MODIFIED] 视频：同样先试游戏自身文件名，不存在再试父 rom 名，都存在才 push
 		if (!hasVideo) {
+			auto &cache = getMediaCache(game->romsPath);
 			std::string videoPath = "./media/videos/" + zipName + ".mp4";
-			if (access((game->romsPath + videoPath).c_str(), F_OK) != 0) {
+			if (cache.videos.count(zipName + ".mp4") == 0) {
 				videoPath.clear();
 				if (!gameInfo.parent.empty()) {
 					std::string parentPath = "./media/videos/" + gameInfo.parent + ".mp4";
-					if (access((game->romsPath + parentPath).c_str(), F_OK) == 0) {
+					if (cache.videos.count(gameInfo.parent + ".mp4") > 0) {
 						videoPath = parentPath;
 					}
 				}

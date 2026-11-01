@@ -70,6 +70,7 @@ namespace pemu {
         float targetFps = 60;
         bool paused = true;
         bool mExitOnStop = false;
+        c2d::config::Option *m_showFpsOpt = nullptr;
     };
 }
 

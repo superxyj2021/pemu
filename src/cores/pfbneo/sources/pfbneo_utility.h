@@ -25,6 +25,11 @@ public:
     static int setDriverActive(const Game &game);
 
     static GameInfo getGameInfo(const Game &game, const std::string& chineseTxtPath);
+
+    // path of the Chinese display-name translation table: an sd-side copy
+    // (users can update it without rebuilding) or the copy bundled in the
+    // nro romfs
+    static std::string getChineseTxtPath(c2d::Io *io);
 };
 
 #endif //PEMU_PFBNEO_UTILITY_H

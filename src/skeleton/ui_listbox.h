@@ -46,7 +46,7 @@ namespace pemu {
 
         ~UIListBox() override;
 
-        void setGames(const std::vector<ss_api::Game> &games);
+        void setGames(std::vector<ss_api::Game> games);
 
         void setSelection(int index);
 
@@ -75,6 +75,8 @@ namespace pemu {
         std::vector<UIListBoxLine *> getLines();
 
         std::vector<ss_api::Game> getGames();
+
+        std::size_t getGamesCount() const { return games.size(); }
 
         ss_api::Game getSelection();
 

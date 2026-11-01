@@ -241,15 +241,41 @@ int PFBNEOUtility::setDriverActive(const Game &game) {
         zipName = "gba_" + zipName;
     }
 
-    for (unsigned int i = 0; i < nBurnDrvCount + 1; i++) {
-        nBurnDrvActive = i;
-        if (nBurnDrvActive >= nBurnDrvCount) break;
-        if (zipName == BurnDrvGetTextA(DRV_NAME)) {
-            break;
+    // one-time zip/driver-name -> driver-index map: the driver table is
+    // static, so the old linear scan over ~8000 entries (string compare per
+    // entry, per game, on every game load AND per game during scans) becomes
+    // an O(1) lookup. first driver wins, matching the old scan order.
+    static std::unordered_map<std::string, unsigned int> driverMap;
+    static bool driverMapBuilt = false;
+    if (!driverMapBuilt) {
+        driverMapBuilt = true;
+        driverMap.reserve(nBurnDrvCount);
+        for (unsigned int i = 0; i < nBurnDrvCount; i++) {
+            nBurnDrvActive = i;
+            const char *name = BurnDrvGetTextA(DRV_NAME);
+            if (name && name[0]) {
+                driverMap.emplace(name, i);
+            }
         }
     }
 
+    auto it = driverMap.find(zipName);
+    nBurnDrvActive = (it != driverMap.end()) ? it->second : (unsigned int) nBurnDrvCount;
+
     return (int) nBurnDrvActive;
+}
+
+std::string PFBNEOUtility::getChineseTxtPath(c2d::Io *io) {
+    // prefer an sd-side copy (users can update the translation table without
+    // rebuilding), fall back to the copy bundled inside the nro romfs
+    if (io) {
+        std::string sdPath = io->getDataPath() + "localisation/Chinese (Simplified)_gamelist.glt";
+        if (io->exist(sdPath)) {
+            return sdPath;
+        }
+        return io->getRomFsPath() + "localisation/Chinese (Simplified)_gamelist.glt";
+    }
+    return {};
 }
 
 PFBNEOUtility::GameInfo PFBNEOUtility::getGameInfo(const Game &game, const std::string& chineseTxtPath) {

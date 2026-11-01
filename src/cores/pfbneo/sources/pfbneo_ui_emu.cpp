@@ -27,6 +27,9 @@ UINT32 (__cdecl *VidHighCol)(INT32 r, INT32 g, INT32 b, INT32 i);
 
 INT32 VidRecalcPal() { return BurnRecalcPal(); }
 
+extern const char *GetRomsetError();
+extern void ClearRomsetError();
+
 #ifdef __PFBA_ARM__
 extern int nSekCpuCore;
 
@@ -142,6 +145,12 @@ int PFBAUiEmu::getSekCpuCore() {
 #endif
 
 int PFBAUiEmu::load(const ss_api::Game &game) {
+    // clear any romset error from a previous failed load
+    ClearRomsetError();
+
+    // cache per-frame config lookups (the config is a linear-scanned list)
+    m_frameskipOpt = pMain->getConfig()->get(PEMUConfig::OptId::EMU_FRAMESKIP, true);
+
     // embedded-image probe: re-check every time a rom is about to be opened.
     // digest split in two halves so the 64-bit reference is never visible as
     // a single literal; a mismatch is treated exactly like a failed startup
@@ -183,7 +192,7 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
     // then kept moving by the throttled flip() in ProgressUpdateBurner.
     {
         auto gameInfo = PFBNEOUtility::getGameInfo(currentGame,
-                                                   pMain->getIo()->getDataPath() + "localisation/Chinese (Simplified)_gamelist.glt");
+                                                   PFBNEOUtility::getChineseTxtPath(pMain->getIo()));
         auto *progressBox = pMain->getUiProgressBox();
         progressBox->setTitle(gameInfo.name.empty() ? currentGame.name : gameInfo.name);
         progressBox->setMessage(TEXT_MSG_PLEASE_WAIT);
@@ -203,6 +212,13 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
     printf("nSekCpuCore: %s\n", nSekCpuCore > 0 ? "M68K" : "C68K (ASM)");
 #endif
 
+    #if defined(__PS4__) || defined(ANDROID) || defined(__SWITCH__)
+    // force 48000hz audio output (matches the switch/ps4/android audio hw,
+    // avoids an extra resample step from the 44100 default). applied here as
+    // well: the config can be reloaded from a saved file between startup and
+    // the first game load, which would otherwise bring back an old 44100
+    pMain->getConfig()->get(PEMUConfig::OptId::EMU_AUDIO_FREQ, true)->setArrayIndex(4);
+#endif
     int audio_freq = pMain->getConfig()->get(PEMUConfig::OptId::EMU_AUDIO_FREQ, true)->getInteger();
     nInterpolation = pMain->getConfig()->get(PEMUConfig::OptId::EMU_AUDIO_INTERPOLATION, true)->getInteger();
     nFMInterpolation = pMain->getConfig()->get(PEMUConfig::OptId::EMU_AUDIO_FMINTERPOLATION, true)->getInteger();
@@ -217,16 +233,41 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
     EnableHiscores = 1;
 
     printf("PFBAUiEmu::load: initialize driver...\n");
+    printf("PFBAUiEmu::load: game: %s (zip: %s), driver: %s (%s)\n",
+           currentGame.name.c_str(), currentGame.path.c_str(),
+           BurnDrvGetTextA(DRV_FULLNAME), BurnDrvGetTextA(DRV_NAME));
     // some drivers require audio buffer to be allocated for DrvInit, add a "dummy" one for now...
     auto *aud = new Audio(audio_freq);
     nBurnSoundRate = aud->getSampleRate();
     nBurnSoundLen = aud->getSamples();
     pBurnSoundOut = (INT16 *) malloc(aud->getSamplesSize());
     if (DrvInit((int) nBurnDrvActive, false) != 0) {
-        printf("\nPFBAUiEmu::load: driver initialisation failed\n");
+        printf("\nPFBAUiEmu::load: driver initialisation failed for %s (%s), driver: %s (%s)\n",
+               currentGame.name.c_str(), currentGame.path.c_str(),
+               BurnDrvGetTextA(DRV_FULLNAME), BurnDrvGetTextA(DRV_NAME));
+        // dump the expected roms of the active driver (name/size/crc) so a
+        // missing or wrong romset can be spotted right away
+        struct BurnRomInfo ri;
+        for (int i = 0; BurnDrvGetRomInfo(&ri, i) == 0; i++) {
+            if (ri.nType != 0) {
+                char *romName = nullptr;
+                BurnDrvGetRomName(&romName, i, 0);
+                printf("  rom[%02d]: %-16s len=%d crc=0x%08x type=0x%02x\n",
+                       i, romName ? romName : "(null)", ri.nLen, ri.nCrc, ri.nType);
+            }
+        }
         delete (aud);
         pMain->getUiProgressBox()->setVisibility(Visibility::Hidden);
-        pMain->getUiMessageBox()->show(TEXT_MSG_TITTLE_ERROR, TEXT_MSG_DRIVER_INIT_FAILED, TEXT_BUTTON_OK);
+        // show the specific romset problem if the romset check caught one
+        // (missing/wrong roms), otherwise the generic driver init failure
+        const char *romsetErr = GetRomsetError();
+        if (romsetErr && romsetErr[0]) {
+            std::string msg = TEXT_MSG_ROM_SET_BAD;
+            msg += romsetErr;
+            pMain->getUiMessageBox()->show(TEXT_MSG_TITTLE_ERROR, msg, TEXT_BUTTON_OK);
+        } else {
+            pMain->getUiMessageBox()->show(TEXT_MSG_TITTLE_ERROR, TEXT_MSG_DRIVER_INIT_FAILED, TEXT_BUTTON_OK);
+        }
         stop();
         return -1;
     }
@@ -418,8 +459,7 @@ void PFBAUiEmu::onUpdate() {
     // update fbneo video buffer and audio
 #if defined(__VITA__) || defined(__SWITCH__)
     // frameskip mode (array index): 0 = OFF, 1 = 自动 (auto), 2..10 = manual skip 1..9
-    const int frameskipMode =
-            pMain->getConfig()->get(PEMUConfig::OptId::EMU_FRAMESKIP, true)->getArrayIndex();
+    const int frameskipMode = m_frameskipOpt ? m_frameskipOpt->getArrayIndex() : 0;
     const int manualSkip = frameskipMode >= 2 ? frameskipMode - 1 : 0;
 #else
     const int manualSkip = 0;

@@ -120,6 +120,12 @@ namespace pemu {
         c2d::Font *pFont = nullptr;
         std::vector<Button> mButtons;
         std::array<std::string, 2> mSkinPath;
+
+        // cached highlight gradient state (HIGHLIGHT is only set at skin load
+        // from config.cfg/override, so resolving it once is safe)
+        bool mGradientEnabled = true;
+        c2d::Color mGradientColor1;
+        c2d::Color mGradientColor2;
     };
 }
 

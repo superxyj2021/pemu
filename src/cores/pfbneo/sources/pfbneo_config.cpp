@@ -95,6 +95,13 @@ PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(rende
     // "romlist.cpp" (RomList::build) will also reload config, but we need new roms paths
     PEMUConfig::load();
 
+#if defined(__PS4__) || defined(ANDROID) || defined(__SWITCH__)
+    // re-apply the forced 48000hz AFTER the saved config is loaded: the saved
+    // config.cfg value (e.g. an old 44100) must not override the platform
+    // default, the audio hw never needs anything else
+    get(EMU_AUDIO_FREQ)->setArrayIndex(4);
+#endif
+
     // add custom rom path 
     addRomPath("ARCADE", io->getDataPath() + "roms/arcade/", {HARDWARE_PREFIX_ARCADE, 0, "Arcade"});
 #ifndef __PFBN_LIGHT__

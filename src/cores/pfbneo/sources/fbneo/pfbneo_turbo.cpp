@@ -66,6 +66,11 @@ namespace pfbneo_turbo {
 
     static c2d::config::Config *s_gameConfig = nullptr;
 
+    // cached Option pointers into the current per-rom config (the option list
+    // is scanned linearly; tick() runs once per emulated frame)
+    static c2d::config::Option *s_rateOptCached = nullptr;
+    static c2d::config::Option *s_buttonOptCached[TURBO_BUTTON_COUNT] = {nullptr};
+
     // current runtime state
     static unsigned int s_turboFrameCounter = 0;   // global frame counter
     static unsigned int s_holdCounter[TURBO_BUTTON_COUNT] = { 0 };
@@ -149,6 +154,10 @@ namespace pfbneo_turbo {
 
     void onGameStop() {
         s_gameConfig = nullptr;
+        s_rateOptCached = nullptr;
+        for (int i = 0; i < TURBO_BUTTON_COUNT; i++) {
+            s_buttonOptCached[i] = nullptr;
+        }
         s_enabledMask = 0;
         s_supportedMask = 0xFF;
         resetCounters();
@@ -227,6 +236,13 @@ namespace pfbneo_turbo {
         }
 
         gameConfig->addGroup(turboGroup);
+
+        // cache the option pointers for the per-frame tick() lookups (the
+        // config object is recreated per game, so re-cache every load)
+        s_rateOptCached = s_gameConfig->getOption(TURBO_OPT_RATE);
+        for (int i = 0; i < TURBO_BUTTON_COUNT; i++) {
+            s_buttonOptCached[i] = s_gameConfig->getOption(TURBO_OPT_A + i);
+        }
     }
 
     // ---------------------------------------------------------------------------
@@ -238,16 +254,15 @@ namespace pfbneo_turbo {
 
         // --- refresh config (applies immediately, i.e. on the next frame) ---
         if (s_gameConfig) {
-            c2d::config::Option *rateOpt = s_gameConfig->getOption(TURBO_OPT_RATE);
-            if (rateOpt) {
-                s_rateIndex = rateOpt->getArrayIndex();
+            if (s_rateOptCached) {
+                s_rateIndex = s_rateOptCached->getArrayIndex();
                 if (s_rateIndex < 0 || s_rateIndex >= TURBO_RATE_COUNT) {
                     s_rateIndex = s_rateDefaultIndex;
                 }
             }
             unsigned int newMask = 0;
             for (int i = 0; i < TURBO_BUTTON_COUNT; i++) {
-                c2d::config::Option *opt = s_gameConfig->getOption(TURBO_OPT_A + i);
+                c2d::config::Option *opt = s_buttonOptCached[i];
                 if (opt && opt->getInteger()) {
                     newMask |= (1u << i);
                 }

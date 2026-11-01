@@ -18,6 +18,9 @@ using namespace pemu;
 
 extern UiMain *pemu_ui;
 
+extern int nBzipError;
+extern const char *GetRomsetError();
+
 extern UINT8 NeoSystem;
 int bDrvOkay = 0;
 int kNetGame = 0;
@@ -57,9 +60,22 @@ static int DoLibInit() {
 
     ProgressCreate();
 
+    char *szZipName = nullptr;
+    BurnDrvGetZipName(&szZipName, 0);
+    printf("DoLibInit: driver: %s (%s), zip: %s\n",
+           BurnDrvGetTextA(DRV_FULLNAME), BurnDrvGetTextA(DRV_NAME),
+           szZipName ? szZipName : "(null)");
+
     nRet = BzipOpen(false);
     printf("DoLibInit: BzipOpen = %i\n", nRet);
     if (nRet) {
+        printf("DoLibInit: romset check failed, nBzipError = 0x%04x "
+               "(0x01/02/04 = essential/gfx/sound missing, 0x10/20/40 = different)\n",
+               nBzipError);
+        const char *err = GetRomsetError();
+        if (err && err[0]) {
+            printf("DoLibInit: %s\n", err);
+        }
         BzipClose();
         return 1;
     }

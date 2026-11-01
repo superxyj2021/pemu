@@ -252,6 +252,22 @@ Skin::Skin(UiMain *u) {
     offset.y += 1.6f;
 #endif
     getFont()->setOffset(offset);
+
+    // resolve the highlight gradient state once (HIGHLIGHT is set from
+    // config.cfg/override at skin load; the per-frame gradient lookup then
+    // only interpolates the two cached colors)
+    if (auto *group = pConfig->getGroup("HIGHLIGHT")) {
+        auto *enableOpt = group->getOption("gradient");
+        mGradientEnabled = !enableOpt || enableOpt->getInteger() == 1;
+        mGradientColor1 = getColor(group, "outline_color");
+        mGradientColor2 = getColor(group, "outline_color2");
+        if (mGradientColor1.r == 0 && mGradientColor1.g == 0 && mGradientColor1.b == 0 && mGradientColor1.a == 0) {
+            mGradientColor1 = c2d::Color::GrayLight;
+        }
+        if (mGradientColor2.r == 0 && mGradientColor2.g == 0 && mGradientColor2.b == 0 && mGradientColor2.a == 0) {
+            mGradientColor2 = c2d::Color(255, 0, 128);
+        }
+    }
 }
 
 config::Config *Skin::getConfig() {
@@ -679,29 +695,12 @@ c2d::Color Skin::getHighlightGradientColor() {
     // shared static clock so the rom list and the menus animate in sync
     static c2d::C2DClock clock;
 
-    auto *group = pConfig ? pConfig->getGroup("HIGHLIGHT") : nullptr;
-    if (!group) {
+    if (!pConfig) {
         return c2d::Color::GrayLight;
     }
 
-    // gradient on/off (default ON)
-    auto *enableOpt = group->getOption("gradient");
-    bool enabled = !enableOpt || enableOpt->getInteger() == 1;
-
-    // first gradient color: HIGHLIGHT > outline_color (e.g. "color1")
-    c2d::Color c1 = getColor(group, "outline_color");
-    // second gradient color: HIGHLIGHT > outline_color2 (e.g. "color45")
-    c2d::Color c2 = getColor(group, "outline_color2");
-    // fallback if the palette entry is missing/transparent
-    if (c1.r == 0 && c1.g == 0 && c1.b == 0 && c1.a == 0) {
-        c1 = c2d::Color::GrayLight;
-    }
-    if (c2.r == 0 && c2.g == 0 && c2.b == 0 && c2.a == 0) {
-        c2 = c2d::Color(255, 0, 128);
-    }
-
-    if (!enabled) {
-        return c1;
+    if (!mGradientEnabled) {
+        return mGradientColor1;
     }
 
     // linear ping-pong: color1 -> color2 -> color1 ... (slow round-trip, ~4s)
@@ -711,12 +710,12 @@ c2d::Color Skin::getHighlightGradientColor() {
         t = 2.0f - t;
     }
     c2d::Color c;
-    c.r = (uint8_t) (c1.r + (c2.r - c1.r) * t);
-    c.g = (uint8_t) (c1.g + (c2.g - c1.g) * t);
-    c.b = (uint8_t) (c1.b + (c2.b - c1.b) * t);
+    c.r = (uint8_t) (mGradientColor1.r + (mGradientColor2.r - mGradientColor1.r) * t);
+    c.g = (uint8_t) (mGradientColor1.g + (mGradientColor2.g - mGradientColor1.g) * t);
+    c.b = (uint8_t) (mGradientColor1.b + (mGradientColor2.b - mGradientColor1.b) * t);
     // the gradient is used for the highlight OUTLINE, keep it fully visible
     // (use the most opaque of the two palette colors)
-    c.a = std::max(c1.a, c2.a);
+    c.a = std::max(mGradientColor1.a, mGradientColor2.a);
     return c;
 }
 
