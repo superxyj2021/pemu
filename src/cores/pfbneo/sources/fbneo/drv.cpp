@@ -1,6 +1,16 @@
 // Driver Init module
 
 #include "skeleton/pemu.h"
+
+// pemu.h (via c2d.h) forces MAX_PATH=512, but fbneo's burn.h declares the
+// path globals as TCHAR[MAX_PATH] with MAX_PATH=260 in every other TU.
+// Force 260 BEFORE burnint.h so the extern declarations match the
+// definitions in paths.cpp - otherwise the LTO link emits -Wodr array-bounds
+// warnings (burner.h/burner_sdl.h would also default MAX_PATH to 511).
+#undef MAX_PATH
+#define MAX_PATH 260
+
+#include "burnint.h"
 #include "burner.h"
 #include "retro_input.h"
 
@@ -14,8 +24,8 @@ int kNetGame = 0;
 INT32 nInputIntfMouseDivider = 1;
 bool bRunPause;
 
-bool is_netgame_or_recording() {
-    return false;
+INT32 is_netgame_or_recording() {
+    return 0;
 }
 
 static int ProgressCreate();

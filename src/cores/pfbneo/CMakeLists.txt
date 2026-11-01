@@ -198,6 +198,12 @@ list(REMOVE_ITEM SRC_CPU
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/tms34010/tms34010_newdasm.cpp
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/tms34010/tms34010_dasm.cpp
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/mips3/x64/mips3_x64.cpp
+        # tms34010 (MAME 0.221) core 与 tms34 (MAME 0.127) core 同时被 glob 编译,
+        # 两个核心对 TMS34010TotalCycles 的声明不一致(INT64 vs INT32),
+        # 触发 -Wlto-type-mismatch。pfbneo 只使用 tms34 core(所有驱动都 include
+        # tms34_intf.h), tms34010 core 是无用代码, 排除之。
+        ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/tms34010/tms34010.cpp
+        ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/tms34010/tms34010_optable.cpp
 		# hmcs40op.cpp是hmcs40.cpp的内联实现文件，不需要单独编译
 		${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/cpu/hmcs40/hmcs40op.cpp
 )
@@ -293,10 +299,12 @@ set(FLAGS
 		-DCHDR_SYSTEM_ZLIB
         #-fomit-frame-pointer
         -Wno-strict-aliasing -Wno-long-long
+        -fno-strict-aliasing
         -Wno-write-strings -Wno-sign-compare -Wno-uninitialized -Wno-unused
         -Wno-conversion -Wno-attributes -Wno-unused-parameter -Wno-unused-value
         -Wno-format-truncation -Wno-parentheses -Wno-sequence-point -Wno-format
         -Wno-misleading-indentation -Wno-restrict -Wno-unused-result
+        -Wno-stringop-truncation
 )
 
 if (OPTION_LIGHT)
@@ -361,9 +369,22 @@ elseif (PLATFORM_SWITCH)
     ##############
     # NX (SWITCH)
     ##############
-    list(APPEND FLAGS -DUSE_FILE32API -ffunction-sections -fomit-frame-pointer)
-	# 链接系统 zlib
-	list(APPEND LDFLAGS -lz)
+    # -O3: the emulator core is integer-heavy, -Og/-O2 leaves a lot of
+    # performance on the table (devkitpro defaults to -O2 in release and -Og
+    # in debug). -O3 here applies to BOTH build types, so the daily debug
+    # build already runs at full speed (debug symbols are still emitted).
+    # LTO is intentionally NOT used: on this 8GB build machine lto-wrapper
+    # falls back to serial codegen, making release links take ~1.5-2h for a
+    # ~3-8% runtime gain. USE_SPEEDHACKS matches the vita/3ds/android builds.
+    list(APPEND FLAGS -DUSE_FILE32API -DUSE_SPEEDHACKS
+            -ffunction-sections -fomit-frame-pointer -O3
+            -fno-semantic-interposition)
+    if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+        list(APPEND FLAGS -fno-plt)
+        list(APPEND LDFLAGS -Wl,--gc-sections)
+    endif ()
+    # 链接系统 zlib
+    list(APPEND LDFLAGS -lz)
 elseif (PLATFORM_LINUX)
     ##############
     # LINUX
@@ -418,24 +439,47 @@ endif ()
 
 # fbneo deps
 find_package(Perl REQUIRED)
+# generate to .tmp then copy_if_different so header mtimes only change when the
+# content actually changes; otherwise every build touches them and make
+# recompiles every driver file that includes one (ctv, cave_*, neo_sprite,
+# pgm_draw, psikyo_tile, toa_*, burn...).
 add_custom_target(${PROJECT_NAME}.deps
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/deps
-        # ctv.h
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp
+        # ctv.h (stdout, content identical regardless of output path)
         COMMAND g++ ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/capcom/ctv_make.cpp -o ${CMAKE_CURRENT_BINARY_DIR}/deps/ctv_make
-        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/deps/ctv_make > ${CMAKE_CURRENT_BINARY_DIR}/deps/ctv.h
-        # pgm sprite
+        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/deps/ctv_make > ${CMAKE_CURRENT_BINARY_DIR}/deps/ctv.h.tmp
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/deps/ctv.h.tmp ${CMAKE_CURRENT_BINARY_DIR}/deps/ctv.h
+        # pgm sprite (stdout, identical regardless of output path)
         COMMAND g++ ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burn/drv/pgm/pgm_sprite_create.cpp -o ${CMAKE_CURRENT_BINARY_DIR}/deps/pgm_sprite_create
-        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/deps/pgm_sprite_create > ${CMAKE_CURRENT_BINARY_DIR}/deps/pgm_sprite.h
-        # func headers
-        COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/scripts/toa_gp9001_func.pl -o ${CMAKE_CURRENT_BINARY_DIR}/deps/toa_gp9001_func.h
-        COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/scripts/neo_sprite_func.pl -o ${CMAKE_CURRENT_BINARY_DIR}/deps/neo_sprite_func.h
-        COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/scripts/cave_tile_func.pl -o ${CMAKE_CURRENT_BINARY_DIR}/deps/cave_tile_func.h
-        COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/scripts/cave_sprite_func.pl -o ${CMAKE_CURRENT_BINARY_DIR}/deps/cave_sprite_func.h
-        COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/scripts/psikyo_tile_func.pl -o ${CMAKE_CURRENT_BINARY_DIR}/deps/psikyo_tile_func.h
+        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/deps/pgm_sprite_create > ${CMAKE_CURRENT_BINARY_DIR}/deps/pgm_sprite.h.tmp
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/deps/pgm_sprite.h.tmp ${CMAKE_CURRENT_BINARY_DIR}/deps/pgm_sprite.h
+        # func headers: the perl scripts embed the output path into the generated
+        # content (#include "..._table.h"), so generate into .tmp/ with the same
+        # filename to keep the bytes identical, then copy_if_different preserves
+        # the real headers' mtime when nothing changed.
+        COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/scripts/toa_gp9001_func.pl -o ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/toa_gp9001_func.h
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/toa_gp9001_func.h ${CMAKE_CURRENT_BINARY_DIR}/deps/toa_gp9001_func.h
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/toa_gp9001_func_table.h ${CMAKE_CURRENT_BINARY_DIR}/deps/toa_gp9001_func_table.h
+        COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/scripts/neo_sprite_func.pl -o ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/neo_sprite_func.h
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/neo_sprite_func.h ${CMAKE_CURRENT_BINARY_DIR}/deps/neo_sprite_func.h
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/neo_sprite_func_table.h ${CMAKE_CURRENT_BINARY_DIR}/deps/neo_sprite_func_table.h
+        COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/scripts/cave_tile_func.pl -o ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/cave_tile_func.h
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/cave_tile_func.h ${CMAKE_CURRENT_BINARY_DIR}/deps/cave_tile_func.h
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/cave_tile_func_table.h ${CMAKE_CURRENT_BINARY_DIR}/deps/cave_tile_func_table.h
+        COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/scripts/cave_sprite_func.pl -o ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/cave_sprite_func.h
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/cave_sprite_func.h ${CMAKE_CURRENT_BINARY_DIR}/deps/cave_sprite_func.h
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/cave_sprite_func_table.h ${CMAKE_CURRENT_BINARY_DIR}/deps/cave_sprite_func_table.h
+        COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/scripts/psikyo_tile_func.pl -o ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/psikyo_tile_func.h
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/psikyo_tile_func.h ${CMAKE_CURRENT_BINARY_DIR}/deps/psikyo_tile_func.h
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/deps/.tmp/psikyo_tile_func_table.h ${CMAKE_CURRENT_BINARY_DIR}/deps/psikyo_tile_func_table.h
         # driverlist.h
-        COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/scripts/gamelist.pl -o ${CMAKE_CURRENT_BINARY_DIR}/deps/driverlist.h -l ${CMAKE_CURRENT_BINARY_DIR}/deps/gamelist.txt ${SRC_DRV}
+        COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/dep/scripts/gamelist.pl -o ${CMAKE_CURRENT_BINARY_DIR}/deps/driverlist.h.tmp -l ${CMAKE_CURRENT_BINARY_DIR}/deps/gamelist.txt ${SRC_DRV}
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/deps/driverlist.h.tmp ${CMAKE_CURRENT_BINARY_DIR}/deps/driverlist.h
 )
-if (PLATFORM_ANDROID)
+if (PLATFORM_ANDROID OR PLATFORM_SWITCH)
+    # run the deps generators before the core compiles; cheap now that
+    # copy_if_different keeps the headers' mtimes stable when nothing changed.
     add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}.deps)
 endif ()
 

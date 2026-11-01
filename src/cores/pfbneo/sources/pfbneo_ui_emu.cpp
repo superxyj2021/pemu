@@ -297,6 +297,14 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
     // runtime-only: nothing is persisted, all cheats start inactive.
     pfbneo_cheat::load(game, pMain->getIo());
 
+#ifdef __SWITCH__
+    // apply the emulation performance mode (0 = power save, 1 = full speed).
+    // per-rom value takes priority over the global one (see PEMUConfig::loadGame).
+    // the UI always keeps stock clocks, we only boost once a game is running.
+    int perfMode = pMain->getConfig()->get(PEMUConfig::OptId::EMU_PERF_MODE, true)->getArrayIndex();
+    PEMUClock::setGameMode(perfMode);
+#endif
+
     return UiEmu::load(game);
 }
 

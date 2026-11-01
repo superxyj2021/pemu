@@ -97,6 +97,14 @@ int main(int argc, char **argv) {
         printf("pfbneo: running in applet mode is not supported, exiting.\n");
         return 0;
     }
+
+    // request the docked high-performance profile, otherwise the system keeps
+    // CPU/GPU at low clocks and heavy arcade games lag (clkrst/pcv clock
+    // boosting below is also capped by the performance configuration).
+    // 0x92220009 = docked full performance configuration.
+    if (R_SUCCEEDED(apmInitialize())) {
+        apmSetPerformanceConfiguration(ApmPerformanceMode_Normal, 0x92220009);
+    }
 #endif
 
     // command line game info

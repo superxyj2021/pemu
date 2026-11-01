@@ -1,6 +1,28 @@
 cmake_minimum_required(VERSION 3.10)
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 
+# devkitpro defaults to -O2 for release builds, which leaves integer-heavy
+# emulator cores on the table. Force -O3 for the whole tree on switch.
+# (must be set before project(), otherwise the devkitpro -O2 default wins)
+if (PLATFORM_SWITCH)
+    set(CMAKE_C_FLAGS_RELEASE "-g -O3 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-g -O3 -DNDEBUG")
+
+    # devkitpro's switch toolchain sets -march=armv8-a+crc+crypto -mtune=cortex-a57.
+    # -mcpu=cortex-a57+crc+crypto replaces both (last-wins in gcc) with codegen
+    # tuned for the Tegra X1 (Cortex-A57). Same ISA, better scheduling.
+    string(APPEND CMAKE_C_FLAGS " -mcpu=cortex-a57+crc+crypto")
+    string(APPEND CMAKE_CXX_FLAGS " -mcpu=cortex-a57+crc+crypto")
+
+    # fbneo/pemu code relies on type-punning that breaks under -fstrict-aliasing
+    # (-O2/-O3): the old -Og debug builds never enabled it, so the bug only
+    # showed up in optimized builds (crashes / wrong UI scaling). The pfbneo
+    # core already forces -fno-strict-aliasing; apply it to the whole tree
+    # (ui libs, sscrap, all cores) so every target behaves identically.
+    string(APPEND CMAKE_C_FLAGS " -fno-strict-aliasing")
+    string(APPEND CMAKE_CXX_FLAGS " -fno-strict-aliasing")
+endif ()
+
 SET(CMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS 1)
 SET(CMAKE_CXX_RESPONSE_FILE_LINK_FLAG "@")
 

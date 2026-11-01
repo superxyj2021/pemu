@@ -1,0 +1,211 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "pemu-switch: configure (Debug)",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "-G",
+        "Unix Makefiles",
+        "-DPLATFORM_SWITCH=ON",
+        "-DCMAKE_BUILD_TYPE=Debug",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-S",
+        "${workspaceFolder}",
+        "-B",
+        "${workspaceFolder}/cmake-build-switch-debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "pemu-switch: configure (Release)",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "-G",
+        "Unix Makefiles",
+        "-DPLATFORM_SWITCH=ON",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-S",
+        "${workspaceFolder}",
+        "-B",
+        "${workspaceFolder}/cmake-build-switch-release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "pemu-switch: build pfbneo (Debug)",
+      "type": "shell",
+      "command": "make pfbneo.deps && make pfbneo.nro",
+      "options": {
+        "cwd": "${workspaceFolder}/cmake-build-switch-debug"
+      },
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "pemu-switch: build pfbneo (Release)",
+      "type": "shell",
+      "command": "make pfbneo.deps && make pfbneo.nro",
+      "options": {
+        "cwd": "${workspaceFolder}/cmake-build-switch-release"
+      },
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "pemu-switch: configure + build pfbneo (Debug)",
+      "dependsOn": [
+        "pemu-switch: configure (Debug)",
+        "pemu-switch: build pfbneo (Debug)"
+      ],
+      "dependsOrder": "sequence",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "pemu-switch: configure + build pfbneo (Release)",
+      "dependsOn": [
+        "pemu-switch: configure (Release)",
+        "pemu-switch: build pfbneo (Release)"
+      ],
+      "dependsOrder": "sequence",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "pemu-switch: run pfbneo (Debug, USB)",
+      "type": "shell",
+      "command": "nxlink",
+      "args": [
+        "-s",
+        "--path",
+        "pfbneo/pfbneo.nro",
+        "${workspaceFolder}/cmake-build-switch-debug/src/cores/pfbneo/pfbneo.nro"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "pemu-switch: run pfbneo (Debug, WiFi)",
+      "type": "shell",
+      "command": "nxlink",
+      "args": [
+        "-a",
+        "${config:pemu.switchIp}",
+        "-s",
+        "--path",
+        "pfbneo/pfbneo.nro",
+        "${workspaceFolder}/cmake-build-switch-debug/src/cores/pfbneo/pfbneo.nro"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "pemu-switch: run pfbneo (Release, USB)",
+      "type": "shell",
+      "command": "nxlink",
+      "args": [
+        "-s",
+        "--path",
+        "pfbneo/pfbneo.nro",
+        "${workspaceFolder}/cmake-build-switch-release/src/cores/pfbneo/pfbneo.nro"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "pemu-switch: run pfbneo (Release, WiFi)",
+      "type": "shell",
+      "command": "nxlink",
+      "args": [
+        "-a",
+        "${config:pemu.switchIp}",
+        "-s",
+        "--path",
+        "pfbneo/pfbneo.nro",
+        "${workspaceFolder}/cmake-build-switch-release/src/cores/pfbneo/pfbneo.nro"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "pemu-switch: build + run pfbneo (Debug, USB)",
+      "type": "shell",
+      "command": "bash scripts/switch-nxlink.sh -b",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "pemu-switch: build + run pfbneo (Debug, WiFi)",
+      "type": "shell",
+      "command": "bash scripts/switch-nxlink.sh -b -a ${config:pemu.switchIp}",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "pemu-switch: build + run pfbneo (Release, WiFi)",
+      "type": "shell",
+      "command": "bash scripts/switch-nxlink.sh -b -r -a ${config:pemu.switchIp}",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "pemu-switch: list Switch processes",
+      "type": "shell",
+      "command": "/opt/devkitpro/devkitA64/bin/aarch64-none-elf-gdb",
+      "args": [
+        "-q",
+        "-batch",
+        "-ex",
+        "target extended-remote ${config:pemu.switchIp}:${config:pemu.switchPort}",
+        "-ex",
+        "info os processes"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

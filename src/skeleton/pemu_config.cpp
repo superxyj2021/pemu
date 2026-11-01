@@ -120,6 +120,14 @@ PEMUConfig::PEMUConfig(Renderer *renderer, const std::string &name, int version)
     emu_grp.addOption({"WAIT_RENDERING", {"OFF", "ON"}, 1, EMU_WAIT_RENDERING, "", TEXT_MENU_WAIT_RENDERING});
 #endif
     emu_grp.addOption({"SHOW_FPS", {"OFF", "ON"}, 0, EMU_SHOW_FPS, "", TEXT_MENU_SHOW_FPS});
+#ifdef __SWITCH__
+    // emulation performance mode: 0 = power save (stock clocks), 1 = full speed
+    // (cpu max + gpu 460mhz on game load). default is full speed.
+    emu_grp.addOption({
+        "PERF_MODE", {TEXT_MENU_EMU_PERF_SAVE, TEXT_MENU_EMU_PERF_FULL}, 1,
+        EMU_PERF_MODE, "", TEXT_MENU_EMU_PERF
+    });
+#endif
     addGroup(emu_grp);
 
     /*

@@ -36,6 +36,7 @@
 #include "ui_help.h"
 
 #include "ui_text_def.h"
+#include "pemu_clock.h"
 
 // internal state flag (set by the core during startup and by the probe
 // below); when cleared, opening roms is blocked and the +/- menus only show

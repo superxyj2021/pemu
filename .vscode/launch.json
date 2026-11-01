@@ -1,0 +1,273 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "pfbneo (Switch)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/cmake-build-switch-debug/src/cores/pfbneo/pfbneo",
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": false,
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/opt/devkitpro/devkitA64/bin/aarch64-none-elf-gdb",
+      "setupCommands": [
+        {
+          "text": "set pagination off",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set confirm off",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set solib-search-path ${workspaceFolder}/cmake-build-switch-debug/src/cores/pfbneo",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set sysroot",
+          "ignoreFailures": true
+        }
+      ],
+      "customLaunchSetupCommands": [
+        {
+          "text": "target extended-remote ${config:pemu.switchIp}:${config:pemu.switchPort}",
+          "ignoreFailures": false
+        },
+        {
+          "text": "attach ${input:switchPid}",
+          "ignoreFailures": false
+        },
+        {
+          "text": "file",
+          "ignoreFailures": true
+        },
+        {
+          "text": "sharedlibrary",
+          "ignoreFailures": true
+        }
+      ],
+      "launchCompleteCommand": "exec-continue",
+      "logging": {
+        "engineLogging": false
+      },
+      "targetArchitecture": "arm64"
+    },
+    {
+      "name": "pgen (Switch)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/cmake-build-switch-debug/src/cores/pgen/pgen",
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": false,
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/opt/devkitpro/devkitA64/bin/aarch64-none-elf-gdb",
+      "setupCommands": [
+        {
+          "text": "set pagination off",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set confirm off",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set solib-search-path ${workspaceFolder}/cmake-build-switch-debug/src/cores/pgen",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set sysroot",
+          "ignoreFailures": true
+        }
+      ],
+      "customLaunchSetupCommands": [
+        {
+          "text": "target extended-remote ${config:pemu.switchIp}:${config:pemu.switchPort}",
+          "ignoreFailures": false
+        },
+        {
+          "text": "attach ${input:switchPid}",
+          "ignoreFailures": false
+        },
+        {
+          "text": "file",
+          "ignoreFailures": true
+        },
+        {
+          "text": "sharedlibrary",
+          "ignoreFailures": true
+        }
+      ],
+      "launchCompleteCommand": "exec-continue",
+      "logging": {
+        "engineLogging": false
+      },
+      "targetArchitecture": "arm64"
+    },
+    {
+      "name": "pnes (Switch)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/cmake-build-switch-debug/src/cores/pnes/pnes",
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": false,
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/opt/devkitpro/devkitA64/bin/aarch64-none-elf-gdb",
+      "setupCommands": [
+        {
+          "text": "set pagination off",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set confirm off",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set solib-search-path ${workspaceFolder}/cmake-build-switch-debug/src/cores/pnes",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set sysroot",
+          "ignoreFailures": true
+        }
+      ],
+      "customLaunchSetupCommands": [
+        {
+          "text": "target extended-remote ${config:pemu.switchIp}:${config:pemu.switchPort}",
+          "ignoreFailures": false
+        },
+        {
+          "text": "attach ${input:switchPid}",
+          "ignoreFailures": false
+        },
+        {
+          "text": "file",
+          "ignoreFailures": true
+        },
+        {
+          "text": "sharedlibrary",
+          "ignoreFailures": true
+        }
+      ],
+      "launchCompleteCommand": "exec-continue",
+      "logging": {
+        "engineLogging": false
+      },
+      "targetArchitecture": "arm64"
+    },
+    {
+      "name": "psnes (Switch)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/cmake-build-switch-debug/src/cores/psnes/psnes",
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": false,
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/opt/devkitpro/devkitA64/bin/aarch64-none-elf-gdb",
+      "setupCommands": [
+        {
+          "text": "set pagination off",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set confirm off",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set solib-search-path ${workspaceFolder}/cmake-build-switch-debug/src/cores/psnes",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set sysroot",
+          "ignoreFailures": true
+        }
+      ],
+      "customLaunchSetupCommands": [
+        {
+          "text": "target extended-remote ${config:pemu.switchIp}:${config:pemu.switchPort}",
+          "ignoreFailures": false
+        },
+        {
+          "text": "attach ${input:switchPid}",
+          "ignoreFailures": false
+        },
+        {
+          "text": "file",
+          "ignoreFailures": true
+        },
+        {
+          "text": "sharedlibrary",
+          "ignoreFailures": true
+        }
+      ],
+      "launchCompleteCommand": "exec-continue",
+      "logging": {
+        "engineLogging": false
+      },
+      "targetArchitecture": "arm64"
+    },
+    {
+      "name": "pgba (Switch)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/cmake-build-switch-debug/src/cores/pgba/pgba",
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": false,
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/opt/devkitpro/devkitA64/bin/aarch64-none-elf-gdb",
+      "setupCommands": [
+        {
+          "text": "set pagination off",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set confirm off",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set solib-search-path ${workspaceFolder}/cmake-build-switch-debug/src/cores/pgba",
+          "ignoreFailures": true
+        },
+        {
+          "text": "set sysroot",
+          "ignoreFailures": true
+        }
+      ],
+      "customLaunchSetupCommands": [
+        {
+          "text": "target extended-remote ${config:pemu.switchIp}:${config:pemu.switchPort}",
+          "ignoreFailures": false
+        },
+        {
+          "text": "attach ${input:switchPid}",
+          "ignoreFailures": false
+        },
+        {
+          "text": "file",
+          "ignoreFailures": true
+        },
+        {
+          "text": "sharedlibrary",
+          "ignoreFailures": true
+        }
+      ],
+      "launchCompleteCommand": "exec-continue",
+      "logging": {
+        "engineLogging": false
+      },
+      "targetArchitecture": "arm64"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "switchPid",
+      "type": "promptString",
+      "description": "PID of the running app on the Switch. Get it from the 'pemu-switch: list switch processes' task.",
+      "default": "0"
+    }
+  ]
+}

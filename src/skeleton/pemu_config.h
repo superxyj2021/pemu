@@ -52,6 +52,7 @@ namespace pemu {
             EMU_AUDIO_FREQ,
             EMU_AUDIO_INTERPOLATION,
             EMU_AUDIO_FMINTERPOLATION,
+            EMU_PERF_MODE,
             EMU_ROTATION,
             EMU_SHOW_FPS,
             EMU_FRAMESKIP,

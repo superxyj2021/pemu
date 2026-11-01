@@ -547,6 +547,18 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
                     ui->getUiEmu()->getVideo()->setFilter((Texture::Filter) option->getArrayIndex());
                 }
                 break;
+#ifdef __SWITCH__
+            case PEMUConfig::OptId::EMU_PERF_MODE:
+                // apply immediately while a game is running (rom menu / in-game
+                // menu). in the main UI the change is only persisted and takes
+                // effect on the next game load (the UI keeps stock clocks).
+                if (isEmuRunning) {
+                    PEMUClock::setGameMode(option->getArrayIndex());
+                    ui->getUiStatusBox()->show("%s: %s", option->getDisplayName().c_str(),
+                                               option->getString().c_str());
+                }
+                break;
+#endif
             case PEMUConfig::OptId::EMU_SHADER:
                 if (isEmuRunning) {
                     ui->getUiEmu()->getVideo()->setShader(option->getArrayIndex());

@@ -31,6 +31,9 @@
 #define TEXT_MENU_EFFECT                                "EFFECT"
 #define TEXT_MENU_WAIT_RENDERING                        "WAIT_RENDERING"
 #define TEXT_MENU_SHOW_FPS                              "SHOW_FPS"
+#define TEXT_MENU_EMU_PERF                              "EMULATION_PERFORMANCE"
+#define TEXT_MENU_EMU_PERF_SAVE                         "POWER_SAVE"
+#define TEXT_MENU_EMU_PERF_FULL                         "FULL_SPEED"
 
 // input options
 #define TEXT_MENU_GAMEPAD                               "GAMEPAD"
@@ -249,6 +252,9 @@
 #define TEXT_MENU_EFFECT                                "视频特效"
 #define TEXT_MENU_WAIT_RENDERING                        "等待渲染"
 #define TEXT_MENU_SHOW_FPS                              "显示帧率"
+#define TEXT_MENU_EMU_PERF                              "模拟性能"
+#define TEXT_MENU_EMU_PERF_SAVE                         "省电"
+#define TEXT_MENU_EMU_PERF_FULL                         "全速"
 
 // Inputs options
 #define TEXT_MENU_GAMEPAD                                "手柄设置"

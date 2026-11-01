@@ -1,0 +1,41 @@
+{
+  "version": 4,
+  "configurations": [
+    {
+      "name": "Switch (devkitA64)",
+      "compilerPath": "/opt/devkitpro/devkitA64/bin/aarch64-none-elf-g++",
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "gcc-arm64",
+      "defines": [
+        "__SWITCH__",
+        "NO_KEYBOARD",
+        "__SSCRAP__",
+        "__MPV__",
+        "_DEBUG",
+        "__DEBUG__"
+      ],
+      "includePath": [
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/external/libcross2d/include",
+        "${workspaceFolder}/external/sscrap/include",
+        "/opt/devkitpro/devkitA64/include",
+        "/opt/devkitpro/libnx/include",
+        "/opt/devkitpro/portlibs/switch/include",
+        "/opt/devkitpro/portlibs/switch/include/**"
+      ],
+      "compileCommands": "${workspaceFolder}/cmake-build-switch-debug/compile_commands.json",
+      "browse": {
+        "path": [
+          "${workspaceFolder}/src",
+          "${workspaceFolder}/external/libcross2d/include",
+          "${workspaceFolder}/external/sscrap/include",
+          "/opt/devkitpro/devkitA64/include",
+          "/opt/devkitpro/libnx/include",
+          "/opt/devkitpro/portlibs/switch/include"
+        ],
+        "limitSymbolsToIncludedHeaders": true
+      }
+    }
+  ]
+}

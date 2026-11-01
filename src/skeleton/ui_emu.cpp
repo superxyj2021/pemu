@@ -107,6 +107,10 @@ void UiEmu::resume() {
 
 void UiEmu::stop() {
     printf("UiEmu::stop()\n");
+#ifdef __SWITCH__
+    // always go back to stock clocks when leaving a game
+    PEMUClock::restore();
+#endif
     if (audio) {
         printf("Closing audio...\n");
         audio->pause(1);
