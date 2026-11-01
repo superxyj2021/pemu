@@ -44,6 +44,13 @@ private:
 
     int frameskip = 0;
 
+    // auto frameskip state: moving average of BurnDrvFrame cpu time and the
+    // current auto skip level (0/1). reset on game load.
+    float m_frameTimeAvg = 0.f;
+    int m_autoSlowFrames = 0;
+    int m_autoFastFrames = 0;
+    int m_autoFrameskip = 0;
+
     C2DClock clock;
 };
 

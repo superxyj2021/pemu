@@ -50,11 +50,15 @@ PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(rende
                          "MVS_JPN_V5", "MVS_JPN_V3S4", "MVS_JPN_J3", "AES_ASIA",
                          "AES_JAPAN", "NEO_MVH_MV1CA", "NEO_MVH_MV1CJ", "DECK_V6", "DEVKIT"},
              0, EMU_NEOBIOS, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_NEOBIOS});
+#if defined(__PFBA_ARM__) || defined(__SWITCH__)
 #ifdef __PFBA_ARM__
     // do not use unibios as default on vita for cyclone asm compatibility
     group->getOption(EMU_NEOBIOS)->setArrayIndex(4);
-    group->addOption({"FRAMESKIP", {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
-                      0, EMU_FRAMESKIP, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_FRAMESKIP});
+#endif
+    // merged frameskip option: OFF / 自动 (auto) / 1..9 (manual skip level).
+    // read live every frame, no restart needed.
+    group->addOption({"FRAMESKIP", {"OFF", "自动", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
+                      1, EMU_FRAMESKIP, "", TEXT_MENU_FRAMESKIP});
 #endif
 
 #if defined(__PS4__) || defined(ANDROID)

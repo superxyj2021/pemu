@@ -15,6 +15,8 @@
 #include "fbneo/pfbneo_cheat.h"
 #include "retro_input_wrapper.h"
 
+#include <chrono>
+
 using namespace c2d;
 using namespace pemu;
 
@@ -248,6 +250,10 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
     nFramesEmulated = 0;
     nFramesRendered = 0;
     nCurrentFrame = 0;
+    m_frameTimeAvg = 0.f;
+    m_autoSlowFrames = 0;
+    m_autoFastFrames = 0;
+    m_autoFrameskip = 0;
     ///////////////
     // FBA DRIVER
     ///////////////
@@ -409,10 +415,27 @@ void PFBAUiEmu::onUpdate() {
     }
 
     // update fbneo video buffer and audio
-#ifdef __VITA__
-    int skip = pMain->getConfig()->get(PEMUConfig::OptId::EMU_FRAMESKIP, true)->getInteger();
+#if defined(__VITA__) || defined(__SWITCH__)
+    // frameskip mode (array index): 0 = OFF, 1 = 自动 (auto), 2..10 = manual skip 1..9
+    const int frameskipMode =
+            pMain->getConfig()->get(PEMUConfig::OptId::EMU_FRAMESKIP, true)->getArrayIndex();
+    const int manualSkip = frameskipMode >= 2 ? frameskipMode - 1 : 0;
 #else
-    int skip = 0;
+    const int manualSkip = 0;
+#endif
+#if defined(__SWITCH__)
+    const bool autoSkipEnabled = frameskipMode == 1;
+#else
+    const bool autoSkipEnabled = false;
+#endif
+    // effective skip for this frame: manual + the auto level learned so far.
+    // must be applied BEFORE the render decision below, otherwise auto skipping
+    // never affects which frames are rendered.
+    int skip = manualSkip;
+#if defined(__SWITCH__)
+    if (autoSkipEnabled && m_autoFrameskip > skip) {
+        skip = m_autoFrameskip;
+    }
 #endif
 
     pBurnDraw = nullptr;
@@ -423,8 +446,45 @@ void PFBAUiEmu::onUpdate() {
         nFramesRendered++;
     }
 
+#if defined(__SWITCH__)
+    // measure BurnDrvFrame only on rendered frames: a skipped frame is cheap by
+    // design (pBurnDraw == nullptr), so averaging it in would make the load look
+    // fine while skipping and turn the skip back off (self-oscillation). the
+    // render-frame time is independent of the current skip level, so the auto
+    // decision stays stable.
+    std::chrono::steady_clock::time_point frameStart{};
+    const bool measuring = autoSkipEnabled && (frameskip > skip);
+    if (measuring) {
+        frameStart = std::chrono::steady_clock::now();
+    }
+#endif
     BurnDrvFrame();
     nCurrentFrame++;
+#if defined(__SWITCH__)
+    if (measuring) {
+        const auto frameEnd = std::chrono::steady_clock::now();
+        const float renderFrameTime =
+                std::chrono::duration<float>(frameEnd - frameStart).count();
+        const float budget = 1.0f / targetFps;
+        if (m_frameTimeAvg <= 0.f) {
+            m_frameTimeAvg = renderFrameTime;
+        }
+        m_frameTimeAvg = m_frameTimeAvg * 0.8f + renderFrameTime * 0.2f;
+        if (m_frameTimeAvg > budget) {
+            m_autoFastFrames = 0;
+            if (++m_autoSlowFrames > 15) {
+                m_autoFrameskip = 1;
+                m_autoSlowFrames = 0;
+            }
+        } else {
+            m_autoSlowFrames = 0;
+            if (++m_autoFastFrames > 90) {
+                m_autoFrameskip = 0;
+                m_autoFastFrames = 0;
+            }
+        }
+    }
+#endif
 
     if (frameskip > skip) {
         video->getTexture()->unlock();
