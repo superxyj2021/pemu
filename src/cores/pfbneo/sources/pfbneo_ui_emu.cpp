@@ -148,9 +148,6 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
     // clear any romset error from a previous failed load
     ClearRomsetError();
 
-    // cache per-frame config lookups (the config is a linear-scanned list)
-    m_frameskipOpt = pMain->getConfig()->get(PEMUConfig::OptId::EMU_FRAMESKIP, true);
-
     // embedded-image probe: re-check every time a rom is about to be opened.
     // digest split in two halves so the 64-bit reference is never visible as
     // a single literal; a mismatch is treated exactly like a failed startup
@@ -458,8 +455,12 @@ void PFBAUiEmu::onUpdate() {
 
     // update fbneo video buffer and audio
 #if defined(__VITA__) || defined(__SWITCH__)
-    // frameskip mode (array index): 0 = OFF, 1 = 自动 (auto), 2..10 = manual skip 1..9
-    const int frameskipMode = m_frameskipOpt ? m_frameskipOpt->getArrayIndex() : 0;
+    // frameskip mode (array index): 0 = OFF, 1 = 自动 (auto), 2..10 = manual skip 1..9.
+    // read live every frame: the per-rom config is deleted/recreated whenever
+    // the in-game menu opens (UiMenu::load -> loadGame), so a cached option
+    // pointer would dangle (UAF) and the value would freeze at the pre-menu state.
+    auto *fsOpt = pMain->getConfig()->get(PEMUConfig::OptId::EMU_FRAMESKIP, true);
+    const int frameskipMode = fsOpt ? fsOpt->getArrayIndex() : 0;
     const int manualSkip = frameskipMode >= 2 ? frameskipMode - 1 : 0;
 #else
     const int manualSkip = 0;

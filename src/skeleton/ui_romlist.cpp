@@ -91,6 +91,9 @@ UIRomList::UIRomList(UiMain *main, RomList *romList, const c2d::Vector2f &size)
     // add blur
     pBlur = new RectangleShape(UIRomList::getLocalBounds());
     pBlur->setFillColor(Color::Gray);
+    // the blur tween is only used for the menu open/close transitions; the
+    // game-load path sets the alpha directly (see the A button handler), so
+    // the load starts on an instantly-darkened rom list
     pBlur->add(new TweenAlpha(0, 230, 0.2));
     pBlur->setVisibility(Visibility::Hidden);
     UIRomList::add(pBlur);
@@ -309,10 +312,11 @@ bool UIRomList::onInput(c2d::Input::Player *players) {
             pRomInfo->mpv->stop();
 #endif
             pMain->getConfig()->loadGame(game);
-            // blur the main ui while the game loads; the actual load (and its
-            // progress box) is deferred to onUpdate() until the blur has fully
-            // faded in, so the box does not pop over a still-bright rom list
-            getBlur()->setVisibility(Visibility::Visible, true);
+            // dim the rom list instantly (no fade): the game load (and its
+            // progress box) is deferred to onUpdate() on the next frame, so
+            // the box appears over an already-dark rom list
+            getBlur()->setVisibility(Visibility::Visible);
+            getBlur()->setAlpha(230);
             mPendingGame = game;
             mPendingLoad = true;
             return true;

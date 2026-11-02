@@ -63,11 +63,11 @@ namespace pemu {
         int mTimerLoadInfoDelay = 300;
 #endif
         int mTimerLoadInfoDone = 0;
-        c2d::C2DClock mTimerLoadVideo;
+c2d::C2DClock mTimerLoadVideo;
         int mTimerLoadVideoDelay = 5000;
         int mTimerLoadVideoDone = 0;
-        ss_api::Game mPendingGame;
         bool mPendingLoad = false;
+        ss_api::Game mPendingGame;
         std::string mPreviewQueryKey;
         std::string mPreviewResult;
     };

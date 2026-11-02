@@ -53,10 +53,6 @@ int UiEmu::load(const Game &game) {
     pMain->getUiStatusBox()->show(TEXT_MSG_PRESS_MENU1_2_FOR_INGAME_MENU);
     currentGame = game;
 
-    // the per-rom config is deleted/recreated on every loadGame(): cached
-    // option pointers from the previous game are dangling, re-fetch on demand
-    m_showFpsOpt = nullptr;
-
     // set fps text on top
     getFpsText()->setLayer(2);
 
@@ -166,11 +162,12 @@ void UiEmu::onUpdate() {
     C2DObject::onUpdate();
 
     if (!isPaused()) {
-        // fps (option pointer cached: the config list is scanned linearly)
-        if (!m_showFpsOpt) {
-            m_showFpsOpt = pMain->getConfig()->get(PEMUConfig::OptId::EMU_SHOW_FPS, true);
-        }
-        bool showFps = m_showFpsOpt && m_showFpsOpt->getInteger();
+        // fps: the per-rom config is deleted/recreated whenever the in-game
+        // menu opens (UiMenu::load -> loadGame), so a cached option pointer
+        // would dangle (UAF) and the value would freeze at the pre-menu state.
+        // the EMULATION group is small, so a direct lookup every frame is fine.
+        auto *opt = pMain->getConfig()->get(PEMUConfig::OptId::EMU_SHOW_FPS, true);
+        bool showFps = opt && opt->getInteger();
         if (showFps) {
             if (!fpsText->isVisible()) {
                 fpsText->setVisibility(c2d::Visibility::Visible);

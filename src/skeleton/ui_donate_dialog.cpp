@@ -123,14 +123,16 @@ void DonateDialog::close() {
 }
 
 bool DonateDialog::onInput(c2d::Input::Player *players) {
+    // the dialog is attached to the top of the ui tree and owns the input
+    // only while it is actually open; a hidden dialog must never swallow
+    // input (UiMenu::onInput yields to it while visible).
+    if (!isVisible()) {
+        return false;
+    }
+
     unsigned int buttons = players[0].buttons;
     if (buttons & Input::Button::B) {
         close();
-        // mark the "just closed" state: UiMenu::onInput forwards input while
-        // the dialog is visible, but the menu may still see the same B press
-        // right after the dialog closes and would hide itself again. the flag
-        // is cleared on the next update frame (see onUpdate).
-        m_justClosed = true;
         // close behaviour: always bring the menu back (it was hidden when the
         // dialog opened). if a game is running it stays paused in the rom
         // menu; the user exits the menu (B) to resume the game.
@@ -142,7 +144,6 @@ bool DonateDialog::onInput(c2d::Input::Player *players) {
 }
 
 void DonateDialog::onUpdate() {
-    m_justClosed = false;
     SkinnedRectangle::onUpdate();
 }
 

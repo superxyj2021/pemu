@@ -38,10 +38,6 @@ namespace pemu {
 
         void setVisibility(c2d::Visibility visibility, bool tweenPlay = false) override;
 
-        // true for one frame after B closed the dialog (lets UiMenu::onInput
-        // swallow the same B press so it does not hide the menu right away)
-        bool justClosed() const { return m_justClosed; }
-
     private:
         UiMain *ui = nullptr;
         SkinnedText *title = nullptr;
@@ -49,7 +45,6 @@ namespace pemu {
         c2d::C2DTexture *donateImage = nullptr;
         c2d::Text *versionText = nullptr;
         float m_imageBottom = 0.f;
-        bool m_justClosed = false;
     };
 }
 

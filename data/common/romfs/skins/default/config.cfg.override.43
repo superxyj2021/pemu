@@ -1,12 +1,21 @@
 # 4/3 skin override
+#
+# The preview box keeps the exact same size and right-aligned position as the
+# 16/9 layout (ROM_IMAGE_RECT = [850, 98, 430, 304], ROM_IMAGE =
+# [881, 112, 368, 276]); only the info column is hidden, leaving the rom list
+# and preview identical to 16/9 on narrower screens.
 
 SKIN_CONFIG :
 {
   MAIN :
   {
+    ROM_IMAGE_RECT :
+    {
+      rectangle = [ 850.0, 98.0, 430.0, 304.0 ];
+    };
     ROM_IMAGE :
     {
-      rectangle = [ 530.0, 8.0, 739.0, 426.0 ];
+      rectangle = [ 881.0, 112.0, 368.0, 276.0 ];
     };
     ROM_INFOS :
     {

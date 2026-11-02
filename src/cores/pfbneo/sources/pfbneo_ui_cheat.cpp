@@ -131,29 +131,12 @@ void PfbneCheatDialog::open() {
     }
 
     // the initial highlight must not land on a cheat without selectable
-    // options: move down to the first selectable row.
+    // options: move to the first selectable row (start search from -1 so
+    // index 0 itself is considered).
     if (count > 0) {
-        int guard = 0;
-        while (!isSelectable(optionIndex + highlightIndex) && guard++ < count) {
-            // same "down" movement as onKeyDown()
-            int middle = maxLines / 2;
-            int index = optionIndex + highlightIndex;
-            if (highlightIndex >= middle && index - middle < count - 1
-                && optionIndex + maxLines < count) {
-                optionIndex++;
-            } else {
-                highlightIndex++;
-            }
-            if (highlightIndex >= maxLines) {
-                highlightIndex = maxLines - 1;
-            }
-            if (optionIndex + highlightIndex >= count) {
-                highlightIndex = count - 1 - optionIndex;
-                if (highlightIndex < 0) {
-                    highlightIndex = 0;
-                    optionIndex = count > 0 ? count - 1 : 0;
-                }
-            }
+        int first = findNextSelectable(-1, 1);
+        if (first >= 0) {
+            setWindowTo(first);
         }
     }
 
@@ -279,31 +262,14 @@ void PfbneCheatDialog::onKeyUp() {
         return;
     }
 
-    // move up, then keep moving until the highlighted row is selectable
-    for (int guard = 0; guard <= total; guard++) {
-        int index = optionIndex + highlightIndex;
-        int middle = maxLines / 2;
-
-        if (highlightIndex <= middle && index - middle > 0) {
-            optionIndex--;
-        } else {
-            highlightIndex--;
-        }
-
-        if (highlightIndex < 0) {
-            highlightIndex = total < maxLines - 1 ? total - 1 : maxLines - 1;
-            optionIndex = (total - 1) - highlightIndex;
-        }
-        if (optionIndex < 0) {
-            optionIndex = 0;
-        }
-
-        if (isSelectable(optionIndex + highlightIndex)) {
-            break;
-        }
+    int cur = optionIndex + highlightIndex;
+    // previous selectable row; when already on the first selectable row this
+    // wraps around to the last selectable row
+    int target = findNextSelectable(cur, -1);
+    if (target >= 0) {
+        setWindowTo(target);
+        updateLines();
     }
-
-    updateLines();
 }
 
 void PfbneCheatDialog::onKeyDown() {
@@ -312,40 +278,42 @@ void PfbneCheatDialog::onKeyDown() {
         return;
     }
 
-    // move down, then keep moving until the highlighted row is selectable.
-    // the window only scrolls (optionIndex++) while there are still hidden
-    // rows below (optionIndex + maxLines < total); once the last items are
-    // fully visible at the bottom, the highlight box moves down instead.
-    for (int guard = 0; guard <= total; guard++) {
-        int index = optionIndex + highlightIndex;
-        int middle = maxLines / 2;
+    int cur = optionIndex + highlightIndex;
+    // next selectable row; when already on the last selectable row this wraps
+    // around to the first selectable row
+    int target = findNextSelectable(cur, 1);
+    if (target >= 0) {
+        setWindowTo(target);
+        updateLines();
+    }
+}
 
-        if (highlightIndex >= middle && index - middle < total - 1
-            && optionIndex + maxLines < total) {
-            optionIndex++;
-        } else {
-            highlightIndex++;
-        }
-
-        if (highlightIndex >= maxLines) {
-            highlightIndex = maxLines - 1;
-        }
-
-        // keep the highlighted row valid when the list is shorter than maxLines
-        if (optionIndex + highlightIndex >= total) {
-            highlightIndex = total - 1 - optionIndex;
-            if (highlightIndex < 0) {
-                highlightIndex = 0;
-                optionIndex = total > 0 ? total - 1 : 0;
-            }
-        }
-
-        if (isSelectable(optionIndex + highlightIndex)) {
-            break;
+int PfbneCheatDialog::findNextSelectable(int from, int delta) {
+    int total = pfbneo_cheat::getCheatCount();
+    for (int step = 1; step <= total; step++) {
+        int idx = ((from + delta * step) % total + total) % total;
+        if (isSelectable(idx)) {
+            return idx;
         }
     }
+    return -1;
+}
 
-    updateLines();
+void PfbneCheatDialog::setWindowTo(int target) {
+    int total = pfbneo_cheat::getCheatCount();
+    int middle = maxLines / 2;
+    // rows above the window top that can still be scrolled away
+    int maxOption = std::max(0, total - maxLines);
+    // keep the highlighted row near the middle of the window when possible,
+    // clamped so the window never shows past the list edges
+    optionIndex = std::min(std::max(0, target - middle), maxOption);
+    highlightIndex = target - optionIndex;
+    if (highlightIndex < 0) {
+        highlightIndex = 0;
+    }
+    if (highlightIndex >= maxLines) {
+        highlightIndex = maxLines - 1;
+    }
 }
 
 bool PfbneCheatDialog::onInput(c2d::Input::Player *players) {

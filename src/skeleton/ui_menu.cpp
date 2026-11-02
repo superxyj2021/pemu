@@ -466,10 +466,12 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
         return C2DObject::onInput(players);
     }
 
-    // donate dialog ("打赏作者"): while it is open it owns the input (B
-    // closes). also swallow the very frame right after closing, so the same B
-    // press does not hide the (just re-opened) menu again.
-    if (donateDialog && (donateDialog->isVisible() || donateDialog->justClosed())) {
+    // donate dialog ("打赏作者"): it is attached to the top of the ui tree (a
+    // UiMain child, so it is hit LAST in the input traversal). while it is
+    // visible it owns the input (B closes it and re-opens the menu). the menu
+    // is hidden while the dialog is open, so the same B press can never reach
+    // this handler twice - no "swallow one frame" flag is needed.
+    if (donateDialog && donateDialog->isVisible()) {
         donateDialog->onInput(players);
         return true;
     }

@@ -54,6 +54,14 @@ private:
     void onKeyDown();
     bool isSelectable(int cheatIndex);
 
+    // nearest selectable cheat index from "from" stepping by delta (+1 down,
+    // -1 up), wrapping around the list ends; -1 when no row is selectable
+    int findNextSelectable(int from, int delta);
+
+    // position the scroll window so cheat index "target" is visible (near the
+    // middle of the window when possible, clamped to the list edges)
+    void setWindowTo(int target);
+
     // advance one marquee scroll state (bounce with pauses)
     static void scrollAdvance(ScrollState &st, float elapsed, float dt, float limit);
 
