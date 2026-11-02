@@ -90,6 +90,28 @@
 #define TEXT_MENU_TURBO_L3                              "TURBO_L3"
 #define TEXT_MENU_TURBO_R3                              "TURBO_R3"
 
+// pfbneo key settings (按键设置) dialog
+#define TEXT_MENU_KEYS                                  "KEY SETTINGS"
+#define TEXT_KEYS_RATE                                  "TURBO RATE"
+#define TEXT_KEYS_RATE_HINT                             "TURBO RATE: 4Hz slowest, 30Hz fastest, default 8Hz"
+#define TEXT_KEYS_RATE_SLOW                             "SLOW"
+#define TEXT_KEYS_RATE_MEDIUM                           "MEDIUM"
+#define TEXT_KEYS_RATE_FAST                             "FAST"
+#define TEXT_KEYS_RATE_FASTER                           "FASTER"
+#define TEXT_KEYS_RATE_VERY_FAST                        "VERY FAST"
+#define TEXT_KEYS_RATE_FASTEST                          "FASTEST"
+#define TEXT_KEYS_TURBO_OFF                             "TURBO OFF"
+#define TEXT_KEYS_TURBO_ON                              "TURBO ON"
+#define TEXT_KEYS_TURBO_NA                              "N/A"
+#define TEXT_KEYS_DEADZONE                              "DEADZONE"
+
+// pfbneo DIP switch (DIP 开关) dialog
+#define TEXT_MENU_DIP                                   "DIP SWITCHES"
+#define TEXT_DIP_EMPTY                                  "NO DIP SWITCHES FOR THIS GAME"
+
+// pfbneo in-game reset (重启游戏)
+#define TEXT_MENU_RESET                                 "RESET GAME"
+
 // main framework
 #define TEXT_NAVIGATION                                 "NAVIGATION"
 #define TEXT_RUN                                        "RUN"
@@ -256,6 +278,13 @@
 #define TEXT_MENU_EMULATION                             "模拟器选项"
 #define TEXT_MENU_SCALING                               "缩放倍率"
 #define TEXT_MENU_SCALING_MODE                          "缩放模式"
+// scaling option values (logic compares against these strings)
+#define TEXT_SCALING_NONE                               "关闭"
+#define TEXT_SCALING_FIT                                "适应屏幕"
+#define TEXT_SCALING_FULL                               "全屏"
+#define TEXT_SCALING_MODE_AUTO                          "自动"
+#define TEXT_SCALING_MODE_ASPECT                        "保持比例"
+#define TEXT_SCALING_MODE_INTEGER                       "整数倍"
 #define TEXT_MENU_FILTER                                "纹理插值过滤"
 #define TEXT_MENU_EFFECT                                "视频特效"
 #define TEXT_MENU_WAIT_RENDERING                        "等待渲染"
@@ -332,6 +361,28 @@
 #define TEXT_MENU_TURBO_L3                              "连发 L3"
 #define TEXT_MENU_TURBO_R3                              "连发 R3"
 
+// pfbneo key settings (按键设置) dialog
+#define TEXT_MENU_KEYS                                  "按键设置"
+#define TEXT_KEYS_RATE                                  "连发速率"
+#define TEXT_KEYS_RATE_HINT                             "连发速率：4Hz最慢，30Hz最快，默认8Hz"
+#define TEXT_KEYS_RATE_SLOW                             "慢"
+#define TEXT_KEYS_RATE_MEDIUM                           "中等"
+#define TEXT_KEYS_RATE_FAST                             "快"
+#define TEXT_KEYS_RATE_FASTER                           "较快"
+#define TEXT_KEYS_RATE_VERY_FAST                        "很快"
+#define TEXT_KEYS_RATE_FASTEST                          "最快"
+#define TEXT_KEYS_TURBO_OFF                             "连发关闭"
+#define TEXT_KEYS_TURBO_ON                              "连发开启"
+#define TEXT_KEYS_TURBO_NA                              "禁用"
+#define TEXT_KEYS_DEADZONE                              "摇杆死区"
+
+// pfbneo DIP switch (DIP 开关) dialog
+#define TEXT_MENU_DIP                                   "DIP 开关"
+#define TEXT_DIP_EMPTY                                  "该游戏没有 DIP 开关"
+
+// pfbneo in-game reset (重启游戏)
+#define TEXT_MENU_RESET                                 "重启游戏"
+
 // main framework
 #define TEXT_NAVIGATION                                 "导航"
 #define TEXT_RUN                                        "运行"
@@ -368,7 +419,7 @@
 #define TEXT_MENU_AUDIO_FM_INTERPOLATION                "音频FM插值"
 #define TEXT_MSG_AUDIO_FM_INTERPOLATION                 "音质换性能：3=FM按硬件时钟重采样，音质最佳但CPU开销大；0/1=按输出采样率直接运算，更省CPU。更改后需重启模拟生效"
 #define TEXT_MENU_ROTATION                              "屏幕旋转"
-#define TEXT_MENU_NEOBIOS                               "NEOBIOS"
+#define TEXT_MENU_NEOBIOS                               "NeoGeo BIOS"
 #define TEXT_MENU_FRAMESKIP                             "跳帧"
 
 #define TEXT_ROMINFO_SYSTEM                             "机种: "

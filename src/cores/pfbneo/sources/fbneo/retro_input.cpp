@@ -4,7 +4,7 @@
 #endif
 #include "retro_input.h"
 #include "burn_gun.h"
-#include "pfbneo_turbo.h"
+#include "pfbneo_keybind.h"
 
 bool bStreetFighterLayout = false;
 
@@ -327,6 +327,11 @@ static void AnalyzeGameLayout()
 
 		// 3 键游戏 (如 jurassic99: 第 3 键可能是投币)
 		if (nRealButtons == 3 && bMisc) {
+			INT32 in12[2] = {nPgmButtons[nPlayer][0], nPgmButtons[nPlayer][1]};
+			char name12[32];
+			snprintf(name12, sizeof(name12), "P%i Buttons 12", nPlayer + 1);
+			addCombo(name12, in12, 2);
+
 			BurnDrvGetInputInfo(&bii, nPgmButtons[nPlayer][2]);
 			if (_stricmp(" Coin", bii.szName + 2) != 0) {
 				INT32 in[2] = {nPgmButtons[nPlayer][0], nPgmButtons[nPlayer][2]};
@@ -342,10 +347,6 @@ static void AnalyzeGameLayout()
 				snprintf(name, sizeof(name), "P%i Buttons 123", nPlayer + 1);
 				addCombo(name, in3, 3);
 			}
-			INT32 in[2] = {nPgmButtons[nPlayer][0], nPgmButtons[nPlayer][1]};
-			char name[32];
-			snprintf(name, sizeof(name), "P%i Buttons 12", nPlayer + 1);
-			addCombo(name, in, 2);
 		}
 
 		// 2 键游戏 (NES 为 "BA", 其他为 "12")
@@ -422,6 +423,13 @@ static inline int input_cb_wrapper(unsigned port, unsigned device, unsigned inde
 
 static inline int CinpState(int nCode)
 {
+	// pfbneo keybind: per-input raw binding override (checked before the
+	// default sKeyBinds lookup so unbound macros can be triggered too).
+	// returns -1 when the input has no custom binding.
+	int keybind = pfbneo_keybind::query(nCode);
+	if (keybind >= 0)
+		return keybind;
+
 	unsigned device = sKeyBinds[nCode].device;
 
 	// Ignore unmapped
@@ -435,10 +443,6 @@ static inline int CinpState(int nCode)
 	{
 		if (input_cb_wrapper(port, device, 0, id))
 		{
-			// pfbneo turbo: apply the auto-fire pattern to supported joystick
-			// buttons. The pattern is global (any player port / keyboard).
-			if (device == RETRO_DEVICE_JOYPAD)
-				return pfbneo_turbo::apply(id, 1);
 			return 1;
 		}
 
@@ -2902,8 +2906,8 @@ void InputMake(void)
 	// make sure controllers are properly set before polling
 	RefreshControllers();
 
-	// pfbneo turbo: advance auto-fire timing and refresh config (1x per frame)
-	pfbneo_turbo::tick();
+	// pfbneo keybind: advance auto-fire timing and refresh config (1x per frame)
+	pfbneo_keybind::tick();
 
 	for (int i = 0; i < MAX_PLAYERS; i++)
 		nLibretroInputBitmask[i] = -1;
@@ -3141,75 +3145,66 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 }
 
 // ---------------------------------------------------------------------------
-// pfbneo turbo (auto-fire) support.
+// pfbneo keybind (按键设置) support: probe helpers exported for the keybind
+// module. the probe re-creates the input mapping exactly like InputInit()
+// does (used from the rom list menu, when the game is not started yet) so the
+// per-rom keybind config options match the mapping the game will use.
 // ---------------------------------------------------------------------------
 
-// Returns the bitmask of the 10 turbo-able buttons actually used by the current
-// (active) driver mapping.
-//  - remap == false : scan the existing mapping table (game already running,
-//                     exact result, no side effects)
-//  - remap == true  : re-create the input mapping for the active driver first
-//                     (used from the rom list, game not started yet)
-unsigned PfbneoTurboGetUsedMask(bool remap)
+int PfbneoProbeInputs()
 {
-	unsigned int mask = 0;
-
-	if (remap) {
-		// the mapping is rebuilt at game start anyway (InputInit -> GameInpInit),
-		// free a possible leftover probe allocation to avoid leaking
-		if (GameInp) {
-			free(GameInp);
-			GameInp = NULL;
-		}
-		// reset the input-mapping tables exactly like InputInit() does.
-		// Without this, sKeyBinds/nSwitchCode keep accumulating entries from
-		// every previously probed rom (opening the menu of rom A and then
-		// rom B yields the UNION of both button sets, e.g. a 6-button CPS2
-		// game like hsf2 would show up to 8 turbo buttons).
-		nSwitchCode = 0;
-		nAxisNum = 0;
-		for (int i = 0; i < MAX_KEYBINDS; i++)
-			sKeyBinds[i] = KeyBind();
-		for (int i = 0; i < MAX_PLAYERS * MAX_AXISES; i++)
-			sAxiBinds[i] = AxiBind();
-		for (int i = 0; i < MAX_PLAYERS; i++)
-			for (int j = 0; j < 6; j++)
-				pDirections[i][j] = NULL;
-		for (int i = 0; i < MAX_PLAYERS; i++)
-			for (int j = 0; j < 2; j++)
-				for (int k = 0; k < 2; k++)
-					bAnalogRightMappingDone[i][j][k] = false;
-		pgi_reset = NULL;
-		pgi_diag = NULL;
-		normal_input_descriptors.clear();
-		nMaxPlayers = BurnDrvGetMaxPlayers();
-		SetDefaultDeviceTypes();
-		SetControllerInfo();
-		GameInpInit();
-		GameInpReassign();
-	}
-
-	for (int i = 0; i < MAX_KEYBINDS; i++) {
-		if (sKeyBinds[i].device == RETRO_DEVICE_JOYPAD) {
-			int slot = pfbneo_turbo::idToSlot(sKeyBinds[i].id);
-			if (slot >= 0) {
-				mask |= (1u << slot);
-			}
-		}
-	}
-
-	// free the probe allocation again: the game is not running, the mapping
-	// will be rebuilt when it starts (and pgi_reset/pgi_diag are only used
-	// during emulation)
-	if (remap && GameInp) {
+	// free a possible leftover probe allocation to avoid leaking
+	if (GameInp) {
 		free(GameInp);
 		GameInp = NULL;
 	}
-
-	return mask;
+	// reset the input-mapping tables exactly like InputInit() does.
+	// Without this, sKeyBinds/nSwitchCode keep accumulating entries from
+	// every previously probed rom.
+	nSwitchCode = 0;
+	nAxisNum = 0;
+	for (int i = 0; i < MAX_KEYBINDS; i++)
+		sKeyBinds[i] = KeyBind();
+	for (int i = 0; i < MAX_PLAYERS * MAX_AXISES; i++)
+		sAxiBinds[i] = AxiBind();
+	for (int i = 0; i < MAX_PLAYERS; i++)
+		for (int j = 0; j < 6; j++)
+			pDirections[i][j] = NULL;
+	for (int i = 0; i < MAX_PLAYERS; i++)
+		for (int j = 0; j < 2; j++)
+			for (int k = 0; k < 2; k++)
+				bAnalogRightMappingDone[i][j][k] = false;
+	pgi_reset = NULL;
+	pgi_diag = NULL;
+	normal_input_descriptors.clear();
+	nMaxPlayers = BurnDrvGetMaxPlayers();
+	SetDefaultDeviceTypes();
+	SetControllerInfo();
+	GameInpInit();
+	GameInpDefault();
+	return 0;
 }
 
-bool PfbneoTurboInputInitialized()
+void PfbneoProbeFree()
+{
+	// free the probe allocation again: the game is not running, the mapping
+	// will be rebuilt when it starts (and pgi_reset/pgi_diag are only used
+	// during emulation)
+	if (GameInp) {
+		free(GameInp);
+		GameInp = NULL;
+	}
+}
+
+bool PfbneoInputInitialized()
 {
 	return bInputInitialized;
+}
+
+unsigned int PfbneoGetLogicalButton(unsigned int nCode)
+{
+	if (nCode >= MAX_KEYBINDS) {
+		return 0;
+	}
+	return sKeyBinds[nCode].id;
 }

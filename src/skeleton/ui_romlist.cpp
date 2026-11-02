@@ -279,7 +279,8 @@ bool UIRomList::onInput(c2d::Input::Player *players) {
         || pMain->getUiMenu()->isVisible()
         || pMain->getUiMenu()->isDonateDialogOpen()
         || pMain->getUiStateMenu()->isVisible()
-        || pMain->getUiProgressBox()->isVisible()) {
+        || pMain->getUiProgressBox()->isVisible()
+        || (pMain->getUiEmu() && pMain->getUiEmu()->isExtraDialogOpen())) {
         return false;
     }
 

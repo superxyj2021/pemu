@@ -28,6 +28,15 @@ namespace pemu {
         // true, so the dialog receives B/LEFT/RIGHT/UP/DOWN directly.
         virtual bool isExtraDialogOpen() { return false; }
 
+        // hook for core-specific rom-menu entries that are only meaningful
+        // for games that actually have the feature (e.g. DIP switches):
+        // the menu entry is hidden when this returns false.
+        virtual bool hasExtraFeature(const std::string &name) { (void) name; return false; }
+
+        // request a soft game reset (like the in-game "reset game" entry);
+        // used by dialogs whose changes only take effect on a reset.
+        virtual void requestReset() {}
+
         UiMain *getUi();
 
         C2DUIVideo *getVideo();

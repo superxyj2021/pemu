@@ -19,6 +19,18 @@ extern struct GameInp *pgi_reset;
 extern struct GameInp *pgi_diag;
 extern UINT8 *diag_input;
 
+// pfbneo keybind probe helpers (implemented in retro_input.cpp):
+//   PfbneoProbeInputs   - run the real input mapping once (GameInp allocated)
+//   PfbneoProbeFree     - free the probe allocation
+//   PfbneoInputInitialized - true once the running game's inputs are mapped
+int  PfbneoProbeInputs();
+void PfbneoProbeFree();
+bool PfbneoInputInitialized();
+
+// the c2d logical button (RETRO device id) a switch nCode is mapped to; used
+// by the keybind module to resolve the default physical key of a logical key.
+unsigned int PfbneoGetLogicalButton(unsigned int nCode);
+
 int16_t input_cb(unsigned port, unsigned device, unsigned index, unsigned id);
 
 void poll_cb();

@@ -14,8 +14,11 @@ using namespace pemu;
 PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(renderer, "PFBNEO", version) {
     printf("PFBNConfig(%s, v%i)\n", getPath().c_str(), version);
 
-    // pfbneo turbo: init defaults
-    pfbneo_turbo::init();
+    // pfbneo keybind: init defaults
+    pfbneo_keybind::init();
+
+    // pfbneo DIP: init defaults
+    pfbneo_dip::init();
 
     c2d::Io *io = renderer->getIo();
 
@@ -59,11 +62,11 @@ PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(rende
                       1, EMU_ROTATION, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_ROTATION});
 #endif
     group->addOption(
-            {"NEOBIOS", {"UNIBIOS_4_0", "UNIBIOS_3_3", "UNIBIOS_3_2", "UNIBIOS_3_1",
-                         "MVS_ASIA_EUR_V6S1", "MVS_ASIA_EUR_V5S1", "MVS_ASIA_EUR_V3S4",
-                         "MVS_USA_V5S2", "MVS_USA_V5S4", "MVS_USA_V5S6", "MVS_JPN_V6",
-                         "MVS_JPN_V5", "MVS_JPN_V3S4", "MVS_JPN_J3", "AES_ASIA",
-                         "AES_JAPAN", "NEO_MVH_MV1CA", "NEO_MVH_MV1CJ", "DECK_V6", "DEVKIT"},
+            {"NEOBIOS", {"UniBIOS 4.0", "UniBIOS 3.3", "UniBIOS 3.2", "UniBIOS 3.1",
+                         "MVS 亚欧版 V6S1", "MVS 亚欧版 V5S1", "MVS 亚欧版 V3S4",
+                         "MVS 美版 V5S2", "MVS 美版 V5S4", "MVS 美版 V5S6", "MVS 日版 V6",
+                         "MVS 日版 V5", "MVS 日版 V3S4", "MVS 日版 J3", "AES 亚洲版",
+                         "AES 日版", "MV-1C 亚洲版", "MV-1C 日版", "NEOGEO CD 主机 V6", "开发机"},
              0, EMU_NEOBIOS, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_NEOBIOS});
 #if defined(__PFBA_ARM__) || defined(__SWITCH__)
 #ifdef __PFBA_ARM__

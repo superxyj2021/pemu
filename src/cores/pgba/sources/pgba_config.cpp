@@ -12,7 +12,7 @@ PGBAConfig::PGBAConfig(Renderer *renderer, const int version) : PEMUConfig(rende
     c2d::Io *io = renderer->getIo();
 
     // no need for auto-scaling mode
-    getOption(PEMUConfig::OptId::EMU_SCALING_MODE)->setArray({"ASPECT", "INTEGER"}, 0);
+    getOption(PEMUConfig::OptId::EMU_SCALING_MODE)->setArray({TEXT_SCALING_MODE_ASPECT, TEXT_SCALING_MODE_INTEGER}, 0);
 
     // "romlist.cpp" (RomList::build) will also reload config, but we need new roms paths
     PEMUConfig::load();

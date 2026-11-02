@@ -60,12 +60,11 @@ PfbneCheatDialog::PfbneCheatDialog(UiMain *main) : SkinnedRectangle(main, {"STAT
     highlight->setVisibility(Visibility::Hidden);
 
     // rows: one per cheat, cheat name (left) + current option value (right),
-    // item text setup comes from the states menu item group
-    // (STATES_MENU > STATES_ITEM > STATES_TEXT) in config.cfg: character
-    // size, colors and outline all track the skin configuration.
-    auto textGroup = ui->getSkin()->getText({"STATES_MENU", "STATES_ITEM", "STATES_TEXT"});
+    // item text setup follows the rom menu (UiMenu) style, with a slightly
+    // larger font size on the popup dialogs (OPTIONS_MENU > ITEMS_TEXT).
+    auto textGroup = ui->getSkin()->getText({"OPTIONS_MENU", "ITEMS_TEXT"});
     Font *font = ui->getSkin()->getFont();
-    lineHeight = (float) textGroup.size + (2 * ui->getScaling().y);
+    lineHeight = (float) textGroup.size + (2 * ui->getScaling().y) + 6;
     // fill the box: rows start below the title (ROWS_TOP_Y) and extend down to
     // a small margin above the bottom edge. no artificial 16-row cap anymore.
     maxLines = (int) ((getSize().y - ROWS_TOP_Y - ROWS_BOTTOM_PAD) / lineHeight);
@@ -163,6 +162,16 @@ bool PfbneCheatDialog::isSelectable(int cheatIndex) {
            && pfbneo_cheat::getOptionCount(cheatIndex) > 0;
 }
 
+void PfbneCheatDialog::setVisibility(c2d::Visibility visibility, bool tweenPlay) {
+    // keep the main ui blurred behind the dialog, exactly like the
+    // save-states dialog (only when the rom list is visible, i.e. opened
+    // from the rom screen; in-game the rom list is hidden anyway)
+    if (ui->getUiRomList() && ui->getUiRomList()->isVisible()) {
+        ui->getUiRomList()->getBlur()->setVisibility(visibility, true);
+    }
+    SkinnedRectangle::setVisibility(visibility, tweenPlay);
+}
+
 void PfbneCheatDialog::updateLines() {
     // when the cheats were inherited from the parent (clone of) rom, say so
     // in the title so the user knows where the list came from
@@ -246,9 +255,12 @@ void PfbneCheatDialog::updateLines() {
     // move the highlight to the selected row (only shown on a selectable row)
     if (highlight) {
         if (highlightVisible) {
-            highlight->setSize(getSize().x - 2 * ROW_PAD_X, lineHeight - 6);
+            // same inset as the rom menu highlight: top = row top + outline,
+            // height = row height - 2*outline -> centered on the row
+            float outline = highlight->getOutlineThickness();
+            highlight->setSize(getSize().x - 2 * ROW_PAD_X, lineHeight - 2 * outline);
             highlight->setPosition(ROW_PAD_X,
-                                   ROWS_TOP_Y + (float) highlightIndex * lineHeight);
+                                   ROWS_TOP_Y + (float) highlightIndex * lineHeight + outline);
             highlight->setVisibility(Visibility::Visible);
         } else {
             highlight->setVisibility(Visibility::Hidden);

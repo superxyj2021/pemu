@@ -80,7 +80,7 @@ public:
         // this is a menu title (or custom option)
         if (!option) {
             // custom options, // === 新增: "打赏作者" 菜单项显示"执行" ===
-            if (name == TEXT_STATES || name == TEXT_QUIT || name == TEXT_MONEY2 || name == TEXT_CHEATS || name == TEXT_SCAN_ROMS) {
+            if (name == TEXT_STATES || name == TEXT_QUIT || name == TEXT_MONEY2 || name == TEXT_CHEATS || name == TEXT_SCAN_ROMS || name == TEXT_MENU_KEYS || name == TEXT_MENU_DIP || name == TEXT_MENU_RESET) {
                 p_value->setVisibility(Visibility::Visible);
                 p_value->setString(TEXT_GO);
                 return;
@@ -150,7 +150,7 @@ UiMenu::UiMenu(UiMain *uiMain) : SkinnedRectangle(uiMain, {"OPTIONS_MENU"}) {
     textGroup = ui->getSkin()->getText({"OPTIONS_MENU", "ITEMS_TEXT"});
 
     // calculate number of items shown
-    lineHeight = (float) textGroup.size + (2 * ui->getScaling().y);
+    lineHeight = (float) textGroup.size + (2 * ui->getScaling().y) + 6;
     maxLines = (int) (UiMenu::getSize().y / lineHeight);
     if ((float) maxLines * lineHeight < UiMenu::getSize().y) {
         lineHeight = UiMenu::getSize().y / (float) maxLines;
@@ -265,7 +265,7 @@ void UiMenu::load(bool isGame) {
     for (auto &group: *groups) {
         // skip some options if needed
         if (group.getName() == "ROMS") continue;
-		if (group.getName() == "GAMEPAD" || group.getName() == "KEYBOARD") continue;
+		if (group.getName() == "GAMEPAD" || group.getName() == "KEYBOARD" || group.getName() == "KEYBIND" || group.getName() == "DIP") continue;
         if (isRomMenu && (group.getName() == "UI_OPTIONS" || group.getName() == "UI_FILTERING")) continue;
         // push group title
 		// get Chinese name
@@ -289,6 +289,16 @@ void UiMenu::load(bool isGame) {
     // QUIT (only in the main menu, not the in-game rom menu)
     if (!isRomMenu) menu_options.push_back({TEXT_SCAN_ROMS, nullptr});
     if (isRomMenu) menu_options.push_back({TEXT_STATES, nullptr});
+    // pfbneo key settings: rom menu + in-game menu entry (opens the key dialog)
+    if (isRomMenu) menu_options.push_back({TEXT_MENU_KEYS, nullptr});
+    // pfbneo DIP switches: rom menu + in-game menu entry, ONLY when the
+    // selected game's driver actually defines DIP switches (arcade and some
+    // home console drivers; games without DIP entries get no menu item)
+    if (isRomMenu && ui->getUiEmu() && ui->getUiEmu()->hasExtraFeature(TEXT_MENU_DIP)) {
+        menu_options.push_back({TEXT_MENU_DIP, nullptr});
+    }
+    // pfbneo in-game "reset game": only while a game is actually running
+    if (isRomMenu && isEmuRunning) menu_options.push_back({TEXT_MENU_RESET, nullptr});
     // pfbneo cheat: runtime-only, rom menu entry - only while a game is
     // actually running (NOT in the main screen's rom menu opened with Menu2)
     if (isRomMenu && isEmuRunning) menu_options.push_back({TEXT_CHEATS, nullptr});
@@ -359,7 +369,7 @@ void UiMenu::onKeyUp() {
 
     // skip menus
     auto opt = menu_options.at(optionIndex + highlightIndex);
-    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2 && opt.name != TEXT_CHEATS && opt.name != TEXT_SCAN_ROMS) {
+    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2 && opt.name != TEXT_CHEATS && opt.name != TEXT_SCAN_ROMS && opt.name != TEXT_MENU_KEYS && opt.name != TEXT_MENU_DIP && opt.name != TEXT_MENU_RESET) {
         return onKeyUp();
     }
 
@@ -550,9 +560,9 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
                 }
                 break;
             case PEMUConfig::OptId::EMU_SCALING_MODE:
-                if (option->getString() == "AUTO") {
+                if (option->getString() == TEXT_SCALING_MODE_AUTO) {
                     ui->getUiStatusBox()->show(TEXT_MSG_TRY_TO_KEEP_INTEGER_SCALING);
-                } else if (option->getString() == "ASPECT") {
+                } else if (option->getString() == TEXT_SCALING_MODE_ASPECT) {
                     ui->getUiStatusBox()->show(TEXT_MSG_KEEP_ASPECT_RATIO);
                 } else {
                     ui->getUiStatusBox()->show(TEXT_MSG_FORCE_INTEGER_SCALING);
@@ -621,6 +631,19 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
             // pfbneo cheat dialog: hide the menu and let the core handle it
             setVisibility(Visibility::Hidden, true);
             ui->getUiEmu()->onMenuExtra(TEXT_CHEATS);
+        } else if (lines.at(highlightIndex)->p_name->getString() == TEXT_MENU_KEYS) {
+            // pfbneo key settings dialog: hide the menu and let the core handle it
+            setVisibility(Visibility::Hidden, true);
+            ui->getUiEmu()->onMenuExtra(TEXT_MENU_KEYS);
+        } else if (lines.at(highlightIndex)->p_name->getString() == TEXT_MENU_DIP) {
+            // pfbneo DIP switch dialog: hide the menu and let the core handle it
+            setVisibility(Visibility::Hidden, true);
+            ui->getUiEmu()->onMenuExtra(TEXT_MENU_DIP);
+        } else if (lines.at(highlightIndex)->p_name->getString() == TEXT_MENU_RESET) {
+            // pfbneo in-game reset: hide the menu, let the core latch a reset
+            // request (it resumes the game itself)
+            setVisibility(Visibility::Hidden, true);
+            ui->getUiEmu()->onMenuExtra(TEXT_MENU_RESET);
         } else if (lines.at(highlightIndex)->p_name->getString() == TEXT_QUIT) {
             if (isEmuRunning) {
                 setVisibility(Visibility::Hidden, true);

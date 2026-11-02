@@ -10,9 +10,12 @@
 #include "pfbneo_ui_emu.h"
 #include "pfbneo_ui_video.h"
 #include "pfbneo_utility.h"
-#include "pfbneo_turbo.h"
+#include "pfbneo_keybind.h"
 #include "pfbneo_ui_cheat.h"
+#include "pfbneo_ui_key.h"
+#include "pfbneo_ui_dip.h"
 #include "fbneo/pfbneo_cheat.h"
+#include "fbneo/pfbneo_dip.h"
 #include "retro_input_wrapper.h"
 
 #include <chrono>
@@ -62,15 +65,37 @@ PFBAUiEmu::PFBAUiEmu(UiMain *ui) : UiEmu(ui) {
     // LAST object, on top of everything) on first open() - see
     // PfbneCheatDialog::open()
     cheatDialog = new PfbneCheatDialog(ui);
+
+    // pfbneo key settings dialog (same attach strategy)
+    keyDialog = new PfbneKeyDialog(ui);
+
+    // pfbneo DIP switch dialog (same attach strategy)
+    dipDialog = new PfbneDipDialog(ui);
 }
 
 bool PFBAUiEmu::isExtraDialogOpen() {
-    return cheatDialog && cheatDialog->isVisible();
+    return (cheatDialog && cheatDialog->isVisible()) || (keyDialog && keyDialog->isVisible())
+           || (dipDialog && dipDialog->isVisible());
+}
+
+bool PFBAUiEmu::hasExtraFeature(const std::string &name) {
+    if (name == TEXT_MENU_DIP) {
+        // only offer the DIP menu when the selected game's driver actually
+        // defines DIP switches (checked after loadGame built the switch list)
+        return pfbneo_dip::getRowCount() > 0;
+    }
+    return false;
+}
+
+void PFBAUiEmu::requestReset() {
+    m_resetRequested = true;
 }
 
 void PFBAUiEmu::attachToUi() {
     if (cheatDialog && !m_dialogAttached) {
         pMain->add(cheatDialog);
+        pMain->add(keyDialog);
+        pMain->add(dipDialog);
         m_dialogAttached = true;
     }
 }
@@ -81,6 +106,28 @@ bool PFBAUiEmu::onMenuExtra(const std::string &name) {
         if (cheatDialog) {
             cheatDialog->open();
         }
+        return true;
+    }
+    if (name == TEXT_MENU_KEYS) {
+        // rom menu / in-game menu -> 按键设置: open the key dialog
+        if (keyDialog) {
+            keyDialog->open();
+        }
+        return true;
+    }
+    if (name == TEXT_MENU_DIP) {
+        // rom menu / in-game menu -> DIP 开关: open the DIP dialog
+        if (dipDialog) {
+            dipDialog->open();
+        }
+        return true;
+    }
+    if (name == TEXT_MENU_RESET) {
+        // in-game menu -> 重启游戏: latch a reset request; the pulse is sent
+        // in onUpdate() right after InputMake() so the driver frame sees it
+        // (same timing as the Select-button long-press reset)
+        m_resetRequested = true;
+        resume();
         return true;
     }
     return false;
@@ -94,8 +141,9 @@ int PFBAUiEmu::getSekCpuCore() {
     std::vector<std::string> zipList;
     int hardware = BurnDrvGetHardwareCode();
 
-    std::string bios = pMain->getConfig()->get(PEMUConfig::OptId::EMU_NEOBIOS, true)->getString();
-    if (isHardware(hardware, HARDWARE_PREFIX_SNK) && Utility::contains(bios, "UNIBIOS")) {
+    // UniBIOS entries are the first 4 of the NEOBIOS array (indices 0..3)
+    int bios = pMain->getConfig()->get(PEMUConfig::OptId::EMU_NEOBIOS, true)->getArrayIndex();
+    if (isHardware(hardware, HARDWARE_PREFIX_SNK) && bios <= 3) {
         sekCpuCore = 1; // SEK_CORE_M68K: USE C M68K CORE
         pMain->getUiMessageBox()->show(
                 TEXT_MSG_TITTLE_WARNING, TEXT_MSG_UNIBIOS_DONT_SUPPORT_M68K_ASM_CORE, TEXT_BUTTON_OK);
@@ -334,8 +382,13 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
     // VIDEO
     //////////
 
-    // pfbneo turbo: reset counters + log game start
-    pfbneo_turbo::onGameStart();
+    // pfbneo keybind: resolve the per-rom key bindings against the running
+    // game's input mapping + log game start
+    pfbneo_keybind::onGameStart();
+
+    // pfbneo DIP: apply the saved DIP switch settings to the running game
+    // (called after InputInit mapped GameInp and ran InpDIPSWResetDIPs)
+    pfbneo_dip::onGameStart();
 
     // pfbneo cheat: parse cheats/<rom>.ini and rebuild the core list.
     // runtime-only: nothing is persisted, all cheats start inactive.
@@ -370,13 +423,22 @@ void ReinitialiseVideo()
 }
 
 void PFBAUiEmu::stop() {
-    // pfbneo turbo: log game stop and clear runtime state
-    pfbneo_turbo::onGameStop();
+    // pfbneo keybind: clear runtime state
+    pfbneo_keybind::onGameStop();
+    // pfbneo DIP: clear runtime state
+    pfbneo_dip::onGameStop();
     // pfbneo cheat: clear runtime state (the core's CheatExit() already
     // freed the pCheatInfo list during DrvExit); hide the dialog if open
     if (cheatDialog) {
         cheatDialog->setVisibility(Visibility::Hidden, true);
     }
+    if (keyDialog) {
+        keyDialog->setVisibility(Visibility::Hidden, true);
+    }
+    if (dipDialog) {
+        dipDialog->setVisibility(Visibility::Hidden, true);
+    }
+    m_resetRequested = false;
     pfbneo_cheat::reset();
     DrvExit();
     if (pBurnSoundOut) {
@@ -392,9 +454,10 @@ bool PFBAUiEmu::onInput(c2d::Input::Player *players) {
         return UiEmu::onInput(players);
     }
 
-    // pfbneo cheat dialog: while it is open, let the dialog (added after the
-    // emu in the ui tree) handle all input instead of the running game
-    if (cheatDialog && cheatDialog->isVisible()) {
+    // pfbneo cheat/key dialogs: while one is open, let the dialog (added
+    // after the emu in the ui tree) handle all input instead of the game
+    if ((cheatDialog && cheatDialog->isVisible()) || (keyDialog && keyDialog->isVisible())
+        || (dipDialog && dipDialog->isVisible())) {
         return false;
     }
 
@@ -451,6 +514,19 @@ void PFBAUiEmu::onUpdate() {
         }
     } else {
         clock.restart();
+    }
+
+    // "reset game" requested from the rom menu: send the same reset-switch
+    // pulse as the Select-button long-press above (set AFTER InputMake so the
+    // driver frame reads it, and clear the frame counters)
+    if (m_resetRequested) {
+        m_resetRequested = false;
+        if (pgi_reset) {
+            pgi_reset->Input.nVal = 1;
+            *(pgi_reset->Input.pVal) = pgi_reset->Input.nVal;
+        }
+        nCurrentFrame = 0;
+        nFramesEmulated = 0;
     }
 
     // update fbneo video buffer and audio

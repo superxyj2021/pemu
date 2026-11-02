@@ -30,6 +30,12 @@ public:
     // (users can update it without rebuilding) or the copy bundled in the
     // nro romfs
     static std::string getChineseTxtPath(c2d::Io *io);
+
+    // GBK (EUC-CN) -> UTF-8 lookup conversion (switch libc has no iconv)
+    static std::string gbkToUtf8(const std::string &input);
+
+    // true when the byte string is already valid UTF-8
+    static bool isUtf8(const std::string &input);
 };
 
 #endif //PEMU_PFBNEO_UTILITY_H

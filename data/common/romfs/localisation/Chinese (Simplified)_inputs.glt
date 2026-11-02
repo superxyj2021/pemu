@@ -1,0 +1,572 @@
+// pfbneo key settings input translation template
+// key = logical key description with the P1/P2 prefix stripped,
+// value = Chinese display name. SD copy overrides the bundled one.
+
+& P2 Dogfight Start	& P2 空战开始
+-- Alt. Input --	-- 备用输入 --
+1 Bet	下注 1
+3 Bet	下注 3
+A Coin	A 投币
+Abort	中止
+Accelerate	加速
+Accelerator	加速
+Aim Down	瞄准下
+Aim Left	瞄准左
+Aim Right	瞄准右
+Aim Up	瞄准上
+All Attacks (Fake)	全部攻击（伪）
+Answer 1	答案 1
+Answer 2	答案 2
+Answer 3	答案 3
+Answer 4	答案 4
+Attack	攻击
+Attack Dir0	攻击 方向0
+Attack Dir1	攻击 方向1
+Attack Dir2	攻击 方向2
+Attack Dir3	攻击 方向3
+Attack Dir4	攻击 方向4
+Attack Dir5	攻击 方向5
+Attack Dir6	攻击 方向6
+Attack Dir7	攻击 方向7
+Attack Left	攻击左
+Attack Pow0	攻击 力量0
+Attack Pow1	攻击 力量1
+Attack Pow2	攻击 力量2
+Attack Right	攻击右
+Auto	自动
+B Coin	B 投币
+Back Fire	后方射击
+Bant0	打击0
+Bant1	打击1
+Bant2	打击2
+Bet	下注
+Bet 1	下注 1
+Bet 1-2	下注 1-2
+Bet 1-3	下注 1-3
+Bet 1-4	下注 1-4
+Bet 1-5	下注 1-5
+Bet 1-6	下注 1-6
+Bet 1B	下注 1B
+Bet 2	下注 2
+Bet 2-3	下注 2-3
+Bet 2-4	下注 2-4
+Bet 2-5	下注 2-5
+Bet 2-6	下注 2-6
+Bet 2B	下注 2B
+Bet 3	下注 3
+Bet 3-4	下注 3-4
+Bet 3-5	下注 3-5
+Bet 3-6	下注 3-6
+Bet 3B	下注 3B
+Bet 4	下注 4
+Bet 4-5	下注 4-5
+Bet 4-6	下注 4-6
+Bet 5	下注 5
+Bet 5-6	下注 5-6
+Bet 6	下注 6
+Bet HR	下注 HR
+Big	大
+Bill 1	纸币 1
+Block	格挡
+Block 2	格挡 2
+Blue Player	蓝方
+Bomb	炸弹
+Boost	加速
+Brake	刹车
+Button	按键
+Button 1	按键 1
+Button 1 (Cocktail)	按键 1（Cocktail）
+Button 1 (L.Flipper)	按键 1（L.Flipper）
+Button 10	按键 10
+Button 2	按键 2
+Button 2 (Gear Down)	按键 2（降挡）
+Button 2 (R.Flipper)	按键 2（R.Flipper）
+Button 3	按键 3
+Button 3 (Gear Up)	按键 3（升挡）
+Button 3 (Plunger/Start)	按键 3（Plunger/Start）
+Button 3 (rotate)	按键 3（rotate）
+Button 4	按键 4
+Button 4 (Shake)	按键 4（Shake）
+Button 4 (rotate)	按键 4（rotate）
+Button 5	按键 5
+Button 6	按键 6
+Button 7	按键 7
+Button 8	按键 8
+Button 9	按键 9
+Button A	按键 A
+Button B	按键 B
+Button C	按键 C
+Button D	按键 D
+Button L	按键 L
+Button R	按键 R
+Button X	按键 X
+Button Y	按键 Y
+Button Z	按键 Z
+Buttons 12	组合键 1+2
+Buttons 123	组合键 1+2+3
+Buttons 1234	组合键 1+2+3+4
+Buttons 124	组合键 1+2+4
+Buttons 13	组合键 1+3
+Buttons 134	组合键 1+3+4
+Buttons 14	组合键 1+4
+Buttons 23	组合键 2+3
+Buttons 234	组合键 2+3+4
+Buttons 24	组合键 2+4
+Buttons 34	组合键 3+4
+Buttons 3x Kick	组合键 三脚
+Buttons 3x Punch	组合键 三拳
+Buttons AB	组合键 A+B
+Buttons ABC	组合键 A+B+C
+Buttons ABCD	组合键 A+B+C+D
+Buttons ABD	组合键 A+B+D
+Buttons AC	组合键 A+C
+Buttons ACD	组合键 A+C+D
+Buttons AD	组合键 A+D
+Buttons BA	组合键 B+A
+Buttons BC	组合键 B+C
+Buttons BCD	组合键 B+C+D
+Buttons BD	组合键 B+D
+Buttons CD	组合键 C+D
+Buttons Medium PK	组合键 中拳+中脚
+Buttons SP + WK	组合键 重拳+轻脚
+Buttons Strong PK	组合键 重拳+重脚
+Buttons Weak PK	组合键 轻拳+轻脚
+Buttons XYZ	组合键 X+Y+Z
+Buy Extra Ball	购买额外球
+Cancel	取消
+Cannon	大炮
+Center Drum Hit / Menu Select	中央鼓击打 / 菜单选择
+Centre	中央
+Change	换人
+Chase	追踪
+Chi (Joy)	吃（摇杆）
+Chun-Li Start	春丽 开始
+Coin	投币
+Coin 1	投币 1
+Coin 2	投币 2
+Coin 3	投币 3
+Coin 4	投币 4
+Coin A	投币 A
+Coin B	投币 B
+Colect	收取
+Collect	收取
+Continue	继续
+Credit	投币
+Cursor	光标
+Deal	发牌
+Dial Left	旋钮左
+Dial Right	旋钮右
+Double Up	加倍
+Down	下
+Down (Cocktail)	下（对打）
+Down (Fake)	下（伪）
+Down (Joy)	下（摇杆）
+Down (left)	下（左）
+Down (right)	下（右）
+Down 1	下 1
+Down 2	下 2
+Drum 1 - Hit 1 / Start 1	鼓 1-击打 1 / 开始 1
+Drum 1 - Hit 2	鼓 1-击打 2
+Drum 2 - Hit 1	鼓 2-击打 1
+Drum 2 - Hit 2	鼓 2-击打 2
+Drum 3 - Hit 1	鼓 3-击打 1
+Drum 3 - Hit 2	鼓 3-击打 2
+Drum 4 - Hit 1	鼓 4-击打 1
+Drum 4 - Hit 2 / Start 2	鼓 4-击打 2 / 开始 2
+Expert Track	专家赛道
+Face Left	面朝左
+Face Right	面朝右
+Finish Stage (Cheat)	完成关卡（作弊）
+Fire	射击
+Fire (Cocktail)	射击（对打）
+Fire 1	射击 1
+Fire 1 (Cocktail)	射击 1（Cocktail）
+Fire 1 (Hit)	射击 1（Hit）
+Fire 2	射击 2
+Fire 2 (Brake)	射击 2（刹车）
+Fire 2 (Cocktail)	射击 2（Cocktail）
+Fire 2 (Select)	射击 2（选择）
+Fire 3	射击 3
+Fire 3 (Cocktail)	射击 3（Cocktail）
+Fire 3 (Nitro)	射击 3（氮气）
+Fire 3 (Rotate)	射击 3（Rotate）
+Fire 4	射击 4
+Fire 4 (Cocktail)	射击 4（Cocktail）
+Fire 4 (Gear)	射击 4（挡位）
+Fire 4 (Rotate)	射击 4（Rotate）
+Fire 4 (Shift)	射击 4（换挡）
+Fire 5	射击 5
+Fire 5 (Cocktail)	射击 5（Cocktail）
+Fire 6	射击 6
+Fire Down	射击下
+Fire Left	射击左
+Fire Right	射击右
+Fire Up	射击上
+Fireball	火球
+First Base	一垒
+Flap	振翅
+Flash Bomb	闪光弹
+Flip	翻转
+Freeze	冻结
+Gear	挡位
+Gear Down	降挡
+Gear Shift	换挡
+Gear Up	升挡
+Go	开始
+Gobble	吞噬
+Green / >>	绿色 / 快进
+Green / Delete Initial	绿色 / 删除姓名缩写
+Grenade	手雷
+Gyro Z	陀螺仪 Z
+Hard	困难
+Headlights	车灯
+Hi	高
+High Attack	重攻击
+High Kick	高踢
+High Punch	高拳
+Hold	保留
+Hold 1	保留 1
+Hold 1 / Double up	保留 1 / 加倍
+Hold 2	保留 2
+Hold 2 /  Big	保留 2 / 大
+Hold 2 / Small	保留 2 / 小
+Hold 3	保留 3
+Hold 4	保留 4
+Hold 5	保留 5
+Home	回中
+Hook Left	左勾拳
+Hook Right	右勾拳
+Horn	喇叭
+Horse 1	赛马 1
+Horse 2	赛马 2
+Horse 3	赛马 3
+Horse 4	赛马 4
+Horse 5	赛马 5
+Horse 6	赛马 6
+Hyper Flip (P1) / Fire 2 (Cocktail)	超翻转 / 射击 2（对打）
+Hyperspace	超空间
+Inviso	隐身
+Jump	跳跃
+Kan (Joy)	杠（摇杆）
+Key DOWN	按键 下
+Key F1	键 F1
+Key F2	键 F2
+Key F3	键 F3
+Key F4	键 F4
+Key F5	键 F5
+Key F6	键 F6
+Key LEFT	按键 左
+Key RIGHT	按键 右
+Key STOP	按键 停止
+Key UP	按键 上
+Keyout	锁门出币
+Kick	踢
+L Button	L 键
+L Trigger	L 扳机
+Laser	激光
+Lasers	激光
+Launch Ball / Shake	发球 / 摇动
+Launch Ball / Shake (Left side)	发球 / 摇动（左侧）
+Launch Ball / Shake (Right side)	发球 / 摇动（右侧）
+Left	左
+Left (Cocktail)	左（对打）
+Left (Coctail)	左（对打）
+Left (Fake)	左（伪）
+Left (Joy)	左（摇杆）
+Left (left)	左（左）
+Left (right)	左（右）
+Left 1	左 1
+Left 2	左 2
+Left Down	左摇杆下
+Left Flipper	左挡板
+Left Flippers	左挡板
+Left Hop/P1 Start	左跳 / P1 开始
+Left Left	左摇杆左
+Left Paddle Backward	左桨后退
+Left Paddle Forward	左桨前进
+Left Right	左摇杆右
+Left Stick Down	左摇杆下
+Left Stick Fire	左摇杆射击
+Left Stick Left	左摇杆左
+Left Stick Right	左摇杆右
+Left Stick Start	左摇杆开始
+Left Stick Thumb	左摇杆拇指
+Left Stick Up	左摇杆上
+Left Switch	左开关
+Left Throw/P1 Start	左投 / P1 开始
+Left Thumb	左手拇指
+Left Trigger	左扳机
+Left Up	左摇杆上
+Left Whip/P1 Start	左鞭 / P1 开始
+Leftstick Down	左摇杆下
+Leftstick Left	左摇杆左
+Leftstick Right	左摇杆右
+Leftstick Up	左摇杆上
+Low	低
+Low Attack	低攻击
+Low Kick	低踢
+Low Punch	低拳
+Lower Left	左下
+Lower Right	右下
+Lt Stick Left	左摇杆左
+Lt Stick Right	左摇杆右
+Machine Gun	机枪
+Mayday	求救
+Medium Attack	中攻击
+Medium Kick	中脚
+Medium Punch	中拳
+Medium kick	中脚
+Medium punch	中拳
+Microphone	麦克风
+Mid	中
+Middle	中
+Missile	导弹
+Missiles	导弹
+Mode	模式
+Mole A1	地鼠 A1
+Mole A2	地鼠 A2
+Mole A3	地鼠 A3
+Mole A4	地鼠 A4
+Mole A5	地鼠 A5
+Mole A6	地鼠 A6
+Mole B1	地鼠 B1
+Mole B2	地鼠 B2
+Mole B3	地鼠 B3
+Mole B4	地鼠 B4
+Mole B5	地鼠 B5
+Mole B6	地鼠 B6
+Move Down	下移
+Move Left	左移
+Move Right	右移
+Move Up	上移
+Move to centre	移至中央
+Music	音乐
+Music +	音乐 +
+Music -	音乐 -
+Nitro	氮气
+No (not)	否
+No Attack	无攻击
+Not in use 2	未使用 2
+Novice Track	新手赛道
+OK	确认
+Oil	油
+Oil Slick	油滑
+Option	选项
+Overtake	超车
+Paper	纸
+Pause	暂停
+Pay Out	派彩
+Pay Switch	派彩开关
+Payout	派彩
+Pedal	踏板
+Pin	钉
+Pit In	进站
+Place	下注
+Play	游玩
+Poker Cancel (fold)	扑克 弃牌
+Pon (Joy)	碰（摇杆）
+Power Blaster	强力炮
+Power Up	强化
+Print 1 (Start)	打印 1（开始）
+Print 2	打印 2
+Pro Track	专业赛道
+Pull Up	上拉
+Punch	拳
+Push	推
+Push Down	下推
+R Button	R 键
+R Trigger	R 扳机
+Raise	加注
+Rapid-Cannon	连发炮
+Rapid-Shot	连发
+Reach (Joy)	听牌（摇杆）
+Red / <<	红色 / 快退
+Red / Enter Initial	红色 / 输入姓名缩写
+Red Player	红方
+Reload	装弹
+Reverse	倒车
+Rght Stick Down	右摇杆下
+Rght Stick Left	右摇杆左
+Rght Stick Right	右摇杆右
+Rght Stick Up	右摇杆上
+Right	右
+Right (Cocktail)	右（对打）
+Right (Coctail)	右（对打）
+Right (Fake)	右（伪）
+Right (Joy)	右（摇杆）
+Right (left)	右（左）
+Right (right)	右（右）
+Right 1	右 1
+Right 2	右 2
+Right Down	右摇杆下
+Right Flipper	右挡板
+Right Flippers	右挡板
+Right Hop/P2 Starrt	右跳 / P2 开始
+Right Left	右摇杆左
+Right Paddle Backward	右桨后退
+Right Paddle Forward	右桨前进
+Right Right	右摇杆右
+Right Stick Down	右摇杆下
+Right Stick Fire	右摇杆射击
+Right Stick Left	右摇杆左
+Right Stick Right	右摇杆右
+Right Stick Thumb	右摇杆拇指
+Right Stick Up	右摇杆上
+Right Switch	右开关
+Right Throw/P2 Start	右投 / P2 开始
+Right Thumb	右手拇指
+Right Trigger	右扳机
+Right Up	右摇杆上
+Right Whip/P2 Start	右鞭 / P2 开始
+Rightstick Down	右摇杆下
+Rightstick Left	右摇杆左
+Rightstick Right	右摇杆右
+Rightstick Up	右摇杆上
+Rock	石头
+Ron (Joy)	和（摇杆）
+Rotate (digital)	旋转（数字）
+Rotate Left	左转
+Rotate Right	右转
+Rt Stick Left	右摇杆左
+Rt Stick Right	右摇杆右
+Run	奔跑
+Ryu Start	隆 开始
+Scissors	剪刀
+Score Line (cheat)	得分线（作弊）
+Second Base	二垒
+Select	选择
+Select Game	选择游戏
+Shield	护盾
+Shift	换挡
+Shift Down	降挡
+Shift Hi	高档
+Shift Lo	低档
+Shift Up	升挡
+Shoot	射击
+Shoot 1	射击 1
+Shoot 2	射击 2
+Shoot 3	射击 3
+Shoot Down	向下射击
+Shoot Left	向左射击
+Shoot Right	向右射击
+Shoot Up	向上射击
+Shot	射击
+Shot (auto)	射击（自动）
+Shot 1	射击 1
+Shot 2	射击 2
+Shot Release	释放射击
+Shot1	射击 1
+Shot2	射击 2
+Shot3	射击 3
+Show	显示
+Show Switch	显示开关
+Skip RAM Test	跳过内存自检
+Slot Stop 1	卷轴停止 1
+Slot Stop 2	卷轴停止 2
+Slot Stop 3	卷轴停止 3
+Small	小
+Smart Bomb	智能炸弹
+Smoke Screen	烟幕
+Soft	软
+Solar Brighter	阳光增强
+Solar Darker	阳光减弱
+Special	特殊
+Special Weapon	特殊武器
+Spinner	转盘
+Spring Launcher	弹簧发射器
+Stand	站立
+Start	开始
+Start (Difficult)	开始（困难）
+Start (Easy)	开始（简单）
+Start (Normal)	开始（普通）
+Start (Vary Difficult)	开始（超难）
+Start (left)	开始（左）
+Start (right)	开始（右）
+Start / Fire	开始 / 射击
+Start / Proceed	开始 / 继续
+Start / Top Secret	开始 / 机密
+Start / Weapon	开始 / 武器
+Start 1	开始 1
+Start 1 / Fire 1	开始 1 / 射击 1
+Start 1 / Fire 2	开始 1 / 射击 2
+Start 1/P1 Fire 1	开始 1 / 射击 1
+Start 2	开始 2
+Start 2 / Fire 2	开始 2 / 射击 2
+Start 2/P1 Fire 2	开始 2 / 射击 2
+Start Race	开始比赛
+Start(GG)/Pause(SMS)	开始（GG）/ 暂停（SMS）
+Start/Collect	开始 / 收取
+Start/Transform	开始 / 变形
+Stick Down	摇杆下
+Stick Left	摇杆左
+Stick Right	摇杆右
+Stick Up	摇杆上
+Strong Attack	重攻击
+Strong Kick	重脚
+Strong Punch	重拳
+Strong kick	重脚
+Strong punch	重拳
+Suicide	自杀
+Super	超必杀
+Super Charger	超级充能
+Swing	挥击
+Swing0	挥击0
+Swing1	挥击1
+Take	拿取
+Third Base	三垒
+Throw	投掷
+Thrust	推进
+Trigger	扳机
+Tsumo (Joy)	自摸（摇杆）
+Turbo	涡轮
+Turn + (digital)	转向+（数字）
+Turn - (digital)	转向-（数字）
+Turn 1	转向 1
+Turn 2	转向 2
+Turn Left	左转
+Turn Right	右转
+Twist Left	左扭
+Twist Right	右扭
+UP	上
+Up	上
+Up (Cocktail)	上（对打）
+Up (Fake)	上（伪）
+Up (Joy)	上（摇杆）
+Up (cocktail)	上（对打）
+Up (left)	上（左）
+Up (right)	上（右）
+Up 1	上 1
+Up 2	上 2
+Upper Left	左上
+Use	使用
+Vulcan	火神炮
+Warp	传送
+Weak Attack	轻攻击
+Weak Kick	轻脚
+Weak Punch	轻拳
+Weak kick	轻脚
+Weak punch	轻拳
+Weapon	武器
+Weapons Van	武器车
+Wheel Left	方向盘左
+Wheel Right	方向盘右
+Wheelie	翘头
+Win	胜利
+Wipers	雨刷
+Yellow Player	黄方
+Yes (do)	是
+Zoom	缩放
+bottom-center	下中
+bottom-left	左下
+bottom-right	右下
+button 1	按键 1
+coin	投币
+ight Stick Down	右摇杆下
+ight Stick Left	右摇杆左
+ight Stick Right	右摇杆右
+ight Stick Up	右摇杆上
+left Left	左 左
+start	开始
+top-center	上中
+top-left	左上
+top-right	右上

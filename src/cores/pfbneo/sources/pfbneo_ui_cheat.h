@@ -30,6 +30,10 @@ public:
 
     bool onInput(c2d::Input::Player *players) override;
 
+    // toggle the rom list blur like the save-states dialog (keeps the main
+    // ui blurred behind the dialog when opened from the rom screen)
+    void setVisibility(c2d::Visibility visibility, bool tweenPlay = false) override;
+
     void onUpdate() override;
 
     void onDraw(c2d::Transform &transform, bool draw) override;

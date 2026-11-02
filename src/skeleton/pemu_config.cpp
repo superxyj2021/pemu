@@ -5,8 +5,52 @@
 #include "pemu.h"
 #include "pemu_config.h"
 
+#include <unordered_map>
+
 using namespace c2d::config;
 using namespace ss_api;
+
+// Chinese display name for a video effect (shader) identifier. The EFFECT
+// option array keeps these display strings; the emulator selects the shader
+// by array index, so the order is what matters, not the strings themselves.
+static std::string shaderDisplayName(const std::string &name) {
+    static const std::unordered_map<std::string, std::string> names = {
+            {"c2d-texture", "无特效"},
+            {"crt-aperture", "CRT 孔径"},
+            {"crt-caligari", "CRT Caligari"},
+            {"crt-cgwg-fast", "CRT CGWG 快速"},
+            {"crt-easymode", "CRT 简易模式"},
+            {"crt-fakelottes", "CRT 简易 Lottes"},
+            {"crt-geom", "CRT 弧面"},
+            {"crt-geom-flat", "CRT 平面"},
+            {"crt-hyllian", "CRT Hyllian"},
+            {"crt-lottes-fast", "CRT Lottes 快速"},
+            {"crt-lottes", "CRT Lottes"},
+            {"crt-mattias", "CRT Mattias"},
+            {"crt-nes-mini", "CRT 迷你 NES"},
+            {"crt-pi", "CRT 树莓派"},
+            {"crt-pi-flat", "CRT 树莓派平面"},
+            {"crt-zfast", "CRT Zfast"},
+            {"handheld-bevel", "掌机 斜面屏"},
+            {"handheld-dot", "掌机 点阵屏"},
+            {"handheld-lcd1x", "掌机 LCD 1x"},
+            {"handheld-lcd3x", "掌机 LCD 3x"},
+            {"handheld-retro-v2", "掌机 复古 v2"},
+            {"handheld-zfast-lcd", "掌机 Zfast LCD"},
+            {"interpolation-aann", "插值 AANN"},
+            {"interpolation-pixellate", "插值 像素化"},
+            {"interpolation-quilez", "插值 Quilez"},
+            {"interpolation-sharp-bilinear", "插值 锐利双线性"},
+            {"interpolation-sharp-bilinear-scanlines", "插值 锐利双线性+扫描线"},
+            {"scanline-simple", "简单扫描线"},
+            {"sharp-2xsal", "锐化 2xSaI"},
+            {"sharp-sabr-v3.0", "锐化 SABR v3.0"},
+            {"sharp-supereagle", "锐化 SuperEagle"},
+            {"sharp-xbrz-freescale", "锐化 xBRZ"},
+    };
+    auto it = names.find(name);
+    return it != names.end() ? it->second : name;
+}
 
 PEMUConfig::PEMUConfig(Renderer *renderer, const std::string &name, int version)
     : Config(name, renderer->getIo()->getDataPath() + "config.cfg", version) {
@@ -102,25 +146,29 @@ PEMUConfig::PEMUConfig(Renderer *renderer, const std::string &name, int version)
     if (displaySize.y > 1080) {
         emu_grp.addOption(
             {
-                "SCALING", {"NONE", "2X", "3X", "4X", "5X", "6X", "7X", "8X", "9X", "FIT", "FULL"}, 9,
+                "SCALING", {TEXT_SCALING_NONE, "2倍", "3倍", "4倍", "5倍", "6倍", "7倍", "8倍", "9倍", TEXT_SCALING_FIT, TEXT_SCALING_FULL}, 9,
                 EMU_SCALING, "", TEXT_MENU_SCALING
             });
     } else if (displaySize.y > 720) {
-        emu_grp.addOption({"SCALING", {"NONE", "2X", "3X", "4X", "FIT", "FULL"}, 4, EMU_SCALING, "", TEXT_MENU_SCALING});
+        emu_grp.addOption({"SCALING", {TEXT_SCALING_NONE, "2倍", "3倍", "4倍", TEXT_SCALING_FIT, TEXT_SCALING_FULL}, 4, EMU_SCALING, "", TEXT_MENU_SCALING});
     } else if (displaySize.y > 544) {
-        emu_grp.addOption({"SCALING", {"NONE", "2X", "3X", "FIT", "FULL"}, 3, EMU_SCALING, "", TEXT_MENU_SCALING});
+        emu_grp.addOption({"SCALING", {TEXT_SCALING_NONE, "2倍", "3倍", TEXT_SCALING_FIT, TEXT_SCALING_FULL}, 3, EMU_SCALING, "", TEXT_MENU_SCALING});
     } else if (displaySize.y > 240) {
-        emu_grp.addOption({"SCALING", {"NONE", "2X", "FIT", "FULL"}, 2, EMU_SCALING, "", TEXT_MENU_SCALING});
+        emu_grp.addOption({"SCALING", {TEXT_SCALING_NONE, "2倍", TEXT_SCALING_FIT, TEXT_SCALING_FULL}, 2, EMU_SCALING, "", TEXT_MENU_SCALING});
     } else {
-        emu_grp.addOption({"SCALING", {"NONE", "FIT", "FULL"}, 1, EMU_SCALING, "", TEXT_MENU_SCALING});
+        emu_grp.addOption({"SCALING", {TEXT_SCALING_NONE, TEXT_SCALING_FIT, TEXT_SCALING_FULL}, 1, EMU_SCALING, "", TEXT_MENU_SCALING});
     }
 
-    emu_grp.addOption({"SCALING_MODE", {"AUTO", "ASPECT", "INTEGER"}, 0, EMU_SCALING_MODE, "", TEXT_MENU_SCALING_MODE});
-    emu_grp.addOption({"FILTER", {std::string("POINT"), std::string("LINEAR")}, 1, EMU_FILTER, "", TEXT_MENU_FILTER});
+    emu_grp.addOption({"SCALING_MODE", {TEXT_SCALING_MODE_AUTO, TEXT_SCALING_MODE_ASPECT, TEXT_SCALING_MODE_INTEGER}, 0, EMU_SCALING_MODE, "", TEXT_MENU_SCALING_MODE});
+    emu_grp.addOption({"FILTER", {"最近邻", "双线性"}, 1, EMU_FILTER, "", TEXT_MENU_FILTER});
     if (const auto shaderList = p_renderer->getShaderList()) {
-        emu_grp.addOption({"EFFECT", shaderList->getNames(), 0, EMU_SHADER, "", TEXT_MENU_EFFECT});
+        auto shaderNames = shaderList->getNames();
+        for (auto &n : shaderNames) {
+            n = shaderDisplayName(n);
+        }
+        emu_grp.addOption({"EFFECT", shaderNames, 0, EMU_SHADER, "", TEXT_MENU_EFFECT});
     } else {
-        emu_grp.addOption({"EFFECT", {"c2d-texture"}, 0, EMU_SHADER, "", TEXT_MENU_EFFECT})->setFlags(HIDDEN);
+        emu_grp.addOption({"EFFECT", {"无特效"}, 0, EMU_SHADER, "", TEXT_MENU_EFFECT})->setFlags(HIDDEN);
     }
 	//emu_grp.addOption({"EFFECT", {"c2d-texture", "crt-aperture", "crt-caligari", "crt-cgwg-fast", "crt-easymode", "crt-fakelottes", "crt-geom", "crt-geom-flat", "crt-hyllian", "crt-lottes-fast", "crt-lottes", "crt-mattias", "crt-nes-mini", "crt-zfast", "handheld-bevel", "handheld-dot", "handheld-lcd1x", "handheld-lcd3x", "handheld-retro-v2", "handheld-zfast-lcd", "interpolation-aann", "interpolation-pixellate", "interpolation-quilez", "interpolation-sharp-bilinear", "interpolation-sharp-bilinear-scanlines", "scanline-simple", "sharp-2xsal", "sharp-sabr-v3.0", "sharp-supereagle", "sharp-xbrz-freescale"}, 0, PEMUConfig::OptId::EMU_SHADER, "", TEXT_MENU_EFFECT});
 #ifdef __VITA__

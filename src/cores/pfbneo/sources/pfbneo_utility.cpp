@@ -19,7 +19,7 @@ static std::unordered_map<std::string, std::string> g_ChineseGameMap;
 
 // ---------- GBK (EUC-CN) -> UTF-8 ----------
 // 用生成表做查表转换（switch 工具链的 libc 未编译 iconv，见 gbk_unicode_table.h）
-static std::string GbkToUtf8(const std::string &input) {
+std::string PFBNEOUtility::gbkToUtf8(const std::string &input) {
     std::string out;
     out.reserve(input.size() * 2);
     size_t i = 0;
@@ -59,6 +59,28 @@ static std::string GbkToUtf8(const std::string &input) {
     return out;
 }
 
+bool PFBNEOUtility::isUtf8(const std::string &input) {
+    size_t i = 0;
+    while (i < input.size()) {
+        unsigned char c = (unsigned char) input[i];
+        if (c < 0x80) {
+            i++;
+            continue;
+        }
+        int n;
+        if ((c & 0xE0) == 0xC0) n = 2;
+        else if ((c & 0xF0) == 0xE0) n = 3;
+        else if ((c & 0xF8) == 0xF0) n = 4;
+        else return false;
+        if (i + (size_t) n > input.size()) return false;
+        for (int j = 1; j < n; j++) {
+            if (((unsigned char) input[i + j] & 0xC0) != 0x80) return false;
+        }
+        i += (size_t) n;
+    }
+    return true;
+}
+
 
 // ---------- 从文本 .glt 文件加载查找表 ----------
 // 文件格式（FinalBurn Neo 的中文翻译模板，GBK/GB2312 编码，CRLF 换行）：
@@ -74,7 +96,8 @@ static bool LoadChineseGameListText(const std::string &filePath)
     }
 
     std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    std::string utf8 = GbkToUtf8(content);
+    // 表文件为 UTF-8（内置副本）；为兼容旧的 GBK SD 副本，非 UTF-8 时按 GBK 转换
+    std::string utf8 = PFBNEOUtility::isUtf8(content) ? content : PFBNEOUtility::gbkToUtf8(content);
 
     g_ChineseGameMap.clear();
     std::string line;

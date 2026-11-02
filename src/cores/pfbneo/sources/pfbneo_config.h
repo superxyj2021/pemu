@@ -8,7 +8,8 @@
 #include "skeleton/pemu_config.h"
 #include "pfbneo_utility.h"
 #include "burner.h"
-#include "pfbneo_turbo.h"
+#include "pfbneo_keybind.h"
+#include "fbneo/pfbneo_dip.h"
 
 class PFBAConfig final : public PEMUConfig {
 public:
@@ -29,9 +30,11 @@ public:
         return {".zip"};
     }
 
-    // pfbneo turbo: add the per-rom "TURBO" config group
+    // pfbneo keybind: add the per-rom "KEYBIND" config group
     void onGameConfigCreate(const ss_api::Game &game, c2d::config::Config *gameConfig) override {
-        pfbneo_turbo::onGameConfigCreate(game, gameConfig);
+        pfbneo_keybind::onGameConfigCreate(game, gameConfig);
+        // pfbneo DIP: add the per-rom "DIP" config group
+        pfbneo_dip::onGameConfigCreate(game, gameConfig);
     }
 };
 

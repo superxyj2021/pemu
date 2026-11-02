@@ -119,7 +119,7 @@ void UIListBox::init(Font *font, int fontSize) {
     setFillColor(Color::GrayLight);
 
     // calculate number of lines shown
-    line_height = (float) fontSize + (2 * ui->getScaling().y);
+    line_height = (float) fontSize + (2 * ui->getScaling().y) + 6;
     max_lines = (int) (getSize().y / line_height);
     if ((float) max_lines * line_height < getSize().y) {
         line_height = getSize().y / (float) max_lines;

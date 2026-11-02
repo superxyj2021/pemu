@@ -59,35 +59,35 @@ void C2DUIVideo::updateScaling(const bool vertical, const bool flip) {
         scale_max.y = screen.y / (float) getTextureRect().height;
     }
 
-    if (scale_value == "FULL") {
+    if (scale_value == TEXT_SCALING_FULL) {
         scale.x = rotated ? scale_max.y : scale_max.x;
         scale.y = rotated ? scale_max.x : scale_max.y;
     } else {
         if (!rotated) {
-            scale.y = scale_value == "FIT" ? scale_max.y : std::min(scale_max.y, scale_value_float);
+            scale.y = scale_value == TEXT_SCALING_FIT ? scale_max.y : std::min(scale_max.y, scale_value_float);
             float size_x = ((float) getTextureRect().height * scale.y) * game_aspect_ratio;
-            if (scaling_mode == "AUTO") {
+            if (scaling_mode == TEXT_SCALING_MODE_AUTO) {
                 scale.x = size_x / (float) getTextureRect().width;
                 // use integer scaling if aspect ratio is not too divergent
                 if (scale.y / scale.x < 1.2f && scale.y / scale.x > 0.8f) {
                     scale.x = scale.y;
                 }
-            } else if (scaling_mode == "ASPECT") {
+            } else if (scaling_mode == TEXT_SCALING_MODE_ASPECT) {
                 scale.x = size_x / (float) getTextureRect().width;
             } else {
                 // integer scaling
                 scale.x = scale.y;
             }
         } else {
-            scale.x = scale_value == "FIT" ? scale_max.y : std::min(scale_max.y, scale_value_float);
+            scale.x = scale_value == TEXT_SCALING_FIT ? scale_max.y : std::min(scale_max.y, scale_value_float);
             float size_y = ((float) getTextureRect().width * scale.x) / game_aspect_ratio;
-            if (scaling_mode == "AUTO") {
+            if (scaling_mode == TEXT_SCALING_MODE_AUTO) {
                 scale.y = size_y / (float) getTextureRect().height;
                 // use integer scaling if aspect ratio is not too divergent
                 if (scale.y / scale.x < 1.2f && scale.y / scale.x > 0.8f) {
                     scale.y = scale.x;
                 }
-            } else if (scaling_mode == "ASPECT") {
+            } else if (scaling_mode == TEXT_SCALING_MODE_ASPECT) {
                 scale.y = size_y / (float) getTextureRect().height;
             } else {
                 // integer scaling

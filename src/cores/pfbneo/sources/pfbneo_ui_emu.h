@@ -21,6 +21,13 @@ public:
 
     bool isExtraDialogOpen() override;
 
+    // DIP switches exist for the selected game? (arcade AND some home console
+    // drivers define them; games without DIP entries hide the menu item)
+    bool hasExtraFeature(const std::string &name) override;
+
+    // latch a soft reset (consumed in onUpdate right after InputMake)
+    void requestReset() override;
+
     // attach the cheat dialog to the ui tree (as the LAST object, i.e.
     // rendered/input on top of everything). must be called once, AFTER
     // UiMain::init() (main loop start), exactly like UiMenuState - NOT from
@@ -38,7 +45,14 @@ private:
     void onUpdate() override;
 
     class PfbneCheatDialog *cheatDialog = nullptr;
+    class PfbneKeyDialog *keyDialog = nullptr;
+    class PfbneDipDialog *dipDialog = nullptr;
     bool m_dialogAttached = false;
+
+    // latched "reset game" request: set from the rom menu, consumed in
+    // onUpdate() right after InputMake() (where the reset switch pulse can
+    // reach the driver frame, like the Select-button long-press path)
+    bool m_resetRequested = false;
 
     bool audio_sync = false;
 
