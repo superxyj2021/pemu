@@ -1,8 +1,8 @@
 //
 // pfbneo turbo (auto-fire / 连发) support module.
 //
-// This module implements per-button turbo for the 8 main joystick buttons
-// (A B X Y LB RB LT RT). The turbo settings are stored inside the *per-rom*
+// This module implements per-button turbo for the 10 main joystick buttons
+// (A B X Y LB RB LT RT L3 R3). The turbo settings are stored inside the *per-rom*
 // config file (see PEMUConfig::loadGame / saveGame), so they can only be
 // changed from the rom specific menu, and are automatically reloaded when
 // the same rom is started again.
@@ -34,7 +34,7 @@ namespace c2d {
 
 namespace pfbneo_turbo {
 
-#define TURBO_BUTTON_COUNT 8
+#define TURBO_BUTTON_COUNT 10
 #define TURBO_RATE_COUNT   6
 
 // id of the "TURBO" group inside the per-rom config.
@@ -44,7 +44,7 @@ namespace pfbneo_turbo {
 // is a small enum ending around 100).
 #define TURBO_GROUP_ID     0x5000
 #define TURBO_OPT_RATE     0x5001   // shared turbo rate (6 levels)
-#define TURBO_OPT_A        0x5002   // +0 .. +7 = per button on/off
+#define TURBO_OPT_A        0x5002   // +0 .. +9 = per button on/off
 #define TURBO_OPT_B        0x5003
 #define TURBO_OPT_X        0x5004
 #define TURBO_OPT_Y        0x5005
@@ -52,6 +52,8 @@ namespace pfbneo_turbo {
 #define TURBO_OPT_RT       0x5007
 #define TURBO_OPT_LB       0x5008
 #define TURBO_OPT_RB       0x5009
+#define TURBO_OPT_L3       0x500A
+#define TURBO_OPT_R3       0x500B
 
 
     // the 8 controllable buttons, in menu display order: a b x y lb rb lt rt
@@ -63,7 +65,9 @@ namespace pfbneo_turbo {
         TURBO_BTN_LT,
         TURBO_BTN_RT,
         TURBO_BTN_LB,
-        TURBO_BTN_RB
+        TURBO_BTN_RB,
+        TURBO_BTN_L3,
+        TURBO_BTN_R3
     };
 
     // --- lifecycle ---------------------------------------------------------

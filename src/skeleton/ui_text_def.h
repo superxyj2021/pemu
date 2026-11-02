@@ -87,6 +87,8 @@
 #define TEXT_MENU_TURBO_RB                              "TURBO_RB"
 #define TEXT_MENU_TURBO_LT                              "TURBO_LT"
 #define TEXT_MENU_TURBO_RT                              "TURBO_RT"
+#define TEXT_MENU_TURBO_L3                              "TURBO_L3"
+#define TEXT_MENU_TURBO_R3                              "TURBO_R3"
 
 // main framework
 #define TEXT_NAVIGATION                                 "NAVIGATION"
@@ -327,6 +329,8 @@
 #define TEXT_MENU_TURBO_RB                              "连发 RB"
 #define TEXT_MENU_TURBO_LT                              "连发 LT"
 #define TEXT_MENU_TURBO_RT                              "连发 RT"
+#define TEXT_MENU_TURBO_L3                              "连发 L3"
+#define TEXT_MENU_TURBO_R3                              "连发 R3"
 
 // main framework
 #define TEXT_NAVIGATION                                 "导航"

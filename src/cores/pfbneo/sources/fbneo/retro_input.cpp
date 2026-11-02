@@ -89,6 +89,8 @@ static void AnalyzeGameLayout()
 	INT32 nKickx3[MAX_PLAYERS] = {0, };
 	INT32 nKickInputs[MAX_PLAYERS][3];
 	INT32 nNeogeoButtons[MAX_PLAYERS][4];
+	INT32 nPgmButtons[MAX_PLAYERS][6];
+	INT32 nArrows[MAX_PLAYERS][4];
 
 	bStreetFighterLayout = false;
 	nMahjongKeyboards = 0;
@@ -96,6 +98,8 @@ static void AnalyzeGameLayout()
 	nFireButtons = 0;
 	nMacroCount = 0;
 	memset(&nNeogeoButtons, 0, sizeof(nNeogeoButtons));
+	memset(&nPgmButtons, 0, sizeof(nPgmButtons));
+	memset(&nArrows, 0, sizeof(nArrows));
 
 	for (UINT32 i = 0; i < nGameInpCount; i++) {
 		bii.szName = NULL;
@@ -167,100 +171,202 @@ static void AnalyzeGameLayout()
 					nNeogeoButtons[nPlayer][3] = i;
 				}
 			}
+
+			// generic fire buttons 1..6 (PGM, NES, Mega Drive, ...): matched by
+			// either the display name (" Button N") or the info key (" fire N")
+			if ((_stricmp(" Button 1", bii.szName + 2) == 0) || (_stricmp(" fire 1", bii.szInfo + 2) == 0)) {
+				nPgmButtons[nPlayer][0] = i;
+			}
+			if ((_stricmp(" Button 2", bii.szName + 2) == 0) || (_stricmp(" fire 2", bii.szInfo + 2) == 0)) {
+				nPgmButtons[nPlayer][1] = i;
+			}
+			if ((_stricmp(" Button 3", bii.szName + 2) == 0) || (_stricmp(" fire 3", bii.szInfo + 2) == 0)) {
+				nPgmButtons[nPlayer][2] = i;
+			}
+			if ((_stricmp(" Button 4", bii.szName + 2) == 0) || (_stricmp(" fire 4", bii.szInfo + 2) == 0)) {
+				nPgmButtons[nPlayer][3] = i;
+			}
+			if ((_stricmp(" Button 5", bii.szName + 2) == 0) || (_stricmp(" fire 5", bii.szInfo + 2) == 0)) {
+				nPgmButtons[nPlayer][4] = i;
+			}
+			if ((_stricmp(" Button 6", bii.szName + 2) == 0) || (_stricmp(" fire 6", bii.szInfo + 2) == 0)) {
+				nPgmButtons[nPlayer][5] = i;
+			}
+
+			// direction inputs (for SETS_VS diagonal macros)
+			if (_stricmp(" Up", bii.szName + 2) == 0) {
+				nArrows[nPlayer][0] = i;
+			}
+			if (_stricmp(" Down", bii.szName + 2) == 0) {
+				nArrows[nPlayer][1] = i;
+			}
+			if (_stricmp(" Left", bii.szName + 2) == 0) {
+				nArrows[nPlayer][2] = i;
+			}
+			if (_stricmp(" Right", bii.szName + 2) == 0) {
+				nArrows[nPlayer][3] = i;
+			}
 		}
 	}
 
 	pgi = GameInp + nGameInpCount;
 
-	// We only support macros deemed "most useful" for now
+	// 组合宏: 移植自桌面版 FBNeo (GameInpInitMacros)。按按钮命名约定自动
+	// 补建 — CPS 六键格斗 (3x Punch/3x Kick/拳脚组合), Neo-Geo 四键
+	// (全部两/三/四键组合 AB..ABCD), PGM 及其他四键/三键/两键游戏, Mega Drive
+	// (ABC/XYZ), VS 类游戏的对角方向宏。宏默认不绑定物理按键 (nMode=0),
+	// 由按键设置界面把物理键分配给它们后才生效。
+	const int nHardwareCode = BurnDrvGetHardwareCode();
+	const bool bNeoGeo = (bIsNeogeoCartGame || (nGameType == RETRO_GAME_TYPE_NEOCD));
+	const bool bNES = (nHardwareCode & HARDWARE_PUBLIC_MASK) == HARDWARE_NES;
+	const bool bMD = (nHardwareCode & HARDWARE_PUBLIC_MASK) == HARDWARE_SEGA_MEGADRIVE;
+	const bool bMisc = (!bNeoGeo) && (!bNES) && (!bMD);
+	const bool bSetsVs = (BurnDrvGetGenreFlags() & GBF_VSFIGHT) &&
+	                     ((BurnDrvGetFamilyFlags() & FBF_SF) ||
+	                      (BurnDrvGetFamilyFlags() & FBF_DSTLK) ||
+	                      (BurnDrvGetFamilyFlags() & FBF_PWRINST) || bNeoGeo);
+
+	// add one combo macro: n = number of game buttons pressed together (max 4)
+	auto addCombo = [&](const char *name, const INT32 *inputs, INT32 n) {
+		pgi->nInput = GIT_MACRO_AUTO;
+		pgi->nType = BIT_DIGITAL;
+		pgi->Macro.nMode = 0;
+		snprintf(pgi->Macro.szName, sizeof(pgi->Macro.szName), "%s", name);
+		for (INT32 j = 0; j < n; j++) {
+			BurnDrvGetInputInfo(&bii, inputs[j]);
+			pgi->Macro.pVal[j] = bii.pVal;
+			pgi->Macro.nVal[j] = 1;
+		}
+		nMacroCount++;
+		pgi++;
+	};
+
 	for (UINT32 nPlayer = 0; nPlayer < nMaxPlayers; nPlayer++) {
-		if (nPunchx3[nPlayer] == 7) {		// Create a 3x punch macro
-			pgi->nInput = GIT_MACRO_AUTO;
-			pgi->nType = BIT_DIGITAL;
+		const INT32 nRealButtons = nFireButtons;
 
-			sprintf(pgi->Macro.szName, "P%i Buttons 3x Punch", nPlayer + 1);
-			for (INT32 j = 0; j < 3; j++) {
-				BurnDrvGetInputInfo(&bii, nPunchInputs[nPlayer][j]);
-				pgi->Macro.pVal[j] = bii.pVal;
-				pgi->Macro.nVal[j] = 1;
+		// VS 类游戏 (SF/恶魔战士/能量战士系列等) 的对角方向宏
+		if (bSetsVs && nArrows[nPlayer][0] && nArrows[nPlayer][1] &&
+		    nArrows[nPlayer][2] && nArrows[nPlayer][3]) {
+			const INT32 diag[4][2] = {{0, 2}, {0, 3}, {1, 2}, {1, 3}};
+			const char *sym[4] = {"\xe2\x86\x96", "\xe2\x86\x97", "\xe2\x86\x99", "\xe2\x86\x98"}; // ↖ ↗ ↙ ↘
+			char ar[16];
+			for (INT32 d = 0; d < 4; d++) {
+				snprintf(ar, sizeof(ar), "P%i %s", nPlayer + 1, sym[d]);
+				INT32 idx[2] = {nArrows[nPlayer][diag[d][0]], nArrows[nPlayer][diag[d][1]]};
+				addCombo(ar, idx, 2);
 			}
-
-			nMacroCount++;
-			pgi++;
 		}
-		if (nKickx3[nPlayer] == 7) {		// Create a 3x kick macro
-			pgi->nInput = GIT_MACRO_AUTO;
-			pgi->nType = BIT_DIGITAL;
 
-			sprintf(pgi->Macro.szName, "P%i Buttons 3x Kick", nPlayer + 1);
-			for (INT32 j = 0; j < 3; j++) {
-				BurnDrvGetInputInfo(&bii, nKickInputs[nPlayer][j]);
-				pgi->Macro.pVal[j] = bii.pVal;
-				pgi->Macro.nVal[j] = 1;
+		// CPS 六键格斗: 三拳
+		if (nPunchx3[nPlayer] == 7) {
+			INT32 in[3] = {nPunchInputs[nPlayer][0], nPunchInputs[nPlayer][1], nPunchInputs[nPlayer][2]};
+			char name[32];
+			snprintf(name, sizeof(name), "P%i Buttons 3x Punch", nPlayer + 1);
+			addCombo(name, in, 3);
+		}
+		// CPS 六键格斗: 三脚
+		if (nKickx3[nPlayer] == 7) {
+			INT32 in[3] = {nKickInputs[nPlayer][0], nKickInputs[nPlayer][1], nKickInputs[nPlayer][2]};
+			char name[32];
+			snprintf(name, sizeof(name), "P%i Buttons 3x Kick", nPlayer + 1);
+			addCombo(name, in, 3);
+		}
+		// CPS 拳脚组合 (sfa3 系列等)
+		if (nPunchx3[nPlayer] == 7 && nKickx3[nPlayer] == 7) {
+			const char *cps[4] = {"Weak PK", "Medium PK", "Strong PK", "SP + WK"};
+			const INT32 combos[4][2] = {{0, 0}, {1, 1}, {2, 2}, {2, 0}}; // LP+LK MP+MK HP+HK HP+LK
+			for (INT32 c = 0; c < 4; c++) {
+				char name[40];
+				snprintf(name, sizeof(name), "P%i Buttons %s", nPlayer + 1, cps[c]);
+				INT32 in[2] = {nPunchInputs[nPlayer][combos[c][0]], nKickInputs[nPlayer][combos[c][1]]};
+				addCombo(name, in, 2);
 			}
-
-			nMacroCount++;
-			pgi++;
 		}
-		// supposedly, those are the 4 most useful neogeo macros
-		if (bIsNeogeoCartGame || (nGameType == RETRO_GAME_TYPE_NEOCD)) {
-			pgi->nInput = GIT_MACRO_AUTO;
-			pgi->nType = BIT_DIGITAL;
-			pgi->Macro.nMode = 0;
-			sprintf(pgi->Macro.szName, "P%i Buttons AB", nPlayer + 1);
-			BurnDrvGetInputInfo(&bii, nNeogeoButtons[nPlayer][0]);
-			pgi->Macro.pVal[0] = bii.pVal;
-			pgi->Macro.nVal[0] = 1;
-			BurnDrvGetInputInfo(&bii, nNeogeoButtons[nPlayer][1]);
-			pgi->Macro.pVal[1] = bii.pVal;
-			pgi->Macro.nVal[1] = 1;
-			nMacroCount++;
-			pgi++;
 
-			pgi->nInput = GIT_MACRO_AUTO;
-			pgi->nType = BIT_DIGITAL;
-			pgi->Macro.nMode = 0;
-			sprintf(pgi->Macro.szName, "P%i Buttons CD", nPlayer + 1);
-			BurnDrvGetInputInfo(&bii, nNeogeoButtons[nPlayer][2]);
-			pgi->Macro.pVal[0] = bii.pVal;
-			pgi->Macro.nVal[0] = 1;
-			BurnDrvGetInputInfo(&bii, nNeogeoButtons[nPlayer][3]);
-			pgi->Macro.pVal[1] = bii.pVal;
-			pgi->Macro.nVal[1] = 1;
-			nMacroCount++;
-			pgi++;
+		// Neo-Geo (4 键): 全部两键/三键/四键组合
+		if (nRealButtons == 4 && bNeoGeo) {
+			const char *ngeo[11] = {"AB", "AC", "AD", "BC", "BD", "CD", "ABC", "ABD", "ACD", "BCD", "ABCD"};
+			const INT32 combos[11][4] = {
+				{0, 1, -1, -1}, {0, 2, -1, -1}, {0, 3, -1, -1},
+				{1, 2, -1, -1}, {1, 3, -1, -1}, {2, 3, -1, -1},
+				{0, 1, 2, -1}, {0, 1, 3, -1}, {0, 2, 3, -1}, {1, 2, 3, -1},
+				{0, 1, 2, 3}
+			};
+			for (INT32 c = 0; c < 11; c++) {
+				INT32 in[4];
+				INT32 n = 0;
+				for (INT32 j = 0; j < 4 && combos[c][j] >= 0; j++) {
+					in[n++] = nNeogeoButtons[nPlayer][combos[c][j]];
+				}
+				char name[32];
+				snprintf(name, sizeof(name), "P%i Buttons %s", nPlayer + 1, ngeo[c]);
+				addCombo(name, in, n);
+			}
+		}
 
-			pgi->nInput = GIT_MACRO_AUTO;
-			pgi->nType = BIT_DIGITAL;
-			pgi->Macro.nMode = 0;
-			sprintf(pgi->Macro.szName, "P%i Buttons ABC", nPlayer + 1);
-			BurnDrvGetInputInfo(&bii, nNeogeoButtons[nPlayer][0]);
-			pgi->Macro.pVal[0] = bii.pVal;
-			pgi->Macro.nVal[0] = 1;
-			BurnDrvGetInputInfo(&bii, nNeogeoButtons[nPlayer][1]);
-			pgi->Macro.pVal[1] = bii.pVal;
-			pgi->Macro.nVal[1] = 1;
-			BurnDrvGetInputInfo(&bii, nNeogeoButtons[nPlayer][2]);
-			pgi->Macro.pVal[2] = bii.pVal;
-			pgi->Macro.nVal[2] = 1;
-			nMacroCount++;
-			pgi++;
+		// PGM 及其他 4 键游戏
+		if (nRealButtons == 4 && bMisc) {
+			const char *pgm[11] = {"12", "13", "14", "23", "24", "34", "123", "124", "134", "234", "1234"};
+			const INT32 combos[11][4] = {
+				{0, 1, -1, -1}, {0, 2, -1, -1}, {0, 3, -1, -1},
+				{1, 2, -1, -1}, {1, 3, -1, -1}, {2, 3, -1, -1},
+				{0, 1, 2, -1}, {0, 1, 3, -1}, {0, 2, 3, -1}, {1, 2, 3, -1},
+				{0, 1, 2, 3}
+			};
+			for (INT32 c = 0; c < 11; c++) {
+				INT32 in[4];
+				INT32 n = 0;
+				for (INT32 j = 0; j < 4 && combos[c][j] >= 0; j++) {
+					in[n++] = nPgmButtons[nPlayer][combos[c][j]];
+				}
+				char name[32];
+				snprintf(name, sizeof(name), "P%i Buttons %s", nPlayer + 1, pgm[c]);
+				addCombo(name, in, n);
+			}
+		}
 
-			pgi->nInput = GIT_MACRO_AUTO;
-			pgi->nType = BIT_DIGITAL;
-			pgi->Macro.nMode = 0;
-			sprintf(pgi->Macro.szName, "P%i Buttons BCD", nPlayer + 1);
-			BurnDrvGetInputInfo(&bii, nNeogeoButtons[nPlayer][1]);
-			pgi->Macro.pVal[0] = bii.pVal;
-			pgi->Macro.nVal[0] = 1;
-			BurnDrvGetInputInfo(&bii, nNeogeoButtons[nPlayer][2]);
-			pgi->Macro.pVal[1] = bii.pVal;
-			pgi->Macro.nVal[1] = 1;
-			BurnDrvGetInputInfo(&bii, nNeogeoButtons[nPlayer][3]);
-			pgi->Macro.pVal[2] = bii.pVal;
-			pgi->Macro.nVal[2] = 1;
-			nMacroCount++;
-			pgi++;
+		// 3 键游戏 (如 jurassic99: 第 3 键可能是投币)
+		if (nRealButtons == 3 && bMisc) {
+			BurnDrvGetInputInfo(&bii, nPgmButtons[nPlayer][2]);
+			if (_stricmp(" Coin", bii.szName + 2) != 0) {
+				INT32 in[2] = {nPgmButtons[nPlayer][0], nPgmButtons[nPlayer][2]};
+				char name[32];
+				snprintf(name, sizeof(name), "P%i Buttons 13", nPlayer + 1);
+				addCombo(name, in, 2);
+
+				in[0] = nPgmButtons[nPlayer][1];
+				snprintf(name, sizeof(name), "P%i Buttons 23", nPlayer + 1);
+				addCombo(name, in, 2);
+
+				INT32 in3[3] = {nPgmButtons[nPlayer][0], nPgmButtons[nPlayer][1], nPgmButtons[nPlayer][2]};
+				snprintf(name, sizeof(name), "P%i Buttons 123", nPlayer + 1);
+				addCombo(name, in3, 3);
+			}
+			INT32 in[2] = {nPgmButtons[nPlayer][0], nPgmButtons[nPlayer][1]};
+			char name[32];
+			snprintf(name, sizeof(name), "P%i Buttons 12", nPlayer + 1);
+			addCombo(name, in, 2);
+		}
+
+		// 2 键游戏 (NES 为 "BA", 其他为 "12")
+		if (nRealButtons == 2 && (bMisc || bNES)) {
+			INT32 in[2] = {nPgmButtons[nPlayer][0], nPgmButtons[nPlayer][1]};
+			char name[32];
+			snprintf(name, sizeof(name), "P%i Buttons %s", nPlayer + 1, bNES ? "BA" : "12");
+			addCombo(name, in, 2);
+		}
+
+		// Mega Drive: ABC (6 键机型再加 XYZ)
+		if (bMD) {
+			INT32 in[3] = {nPgmButtons[nPlayer][0], nPgmButtons[nPlayer][1], nPgmButtons[nPlayer][2]};
+			char name[32];
+			snprintf(name, sizeof(name), "P%i Buttons ABC", nPlayer + 1);
+			addCombo(name, in, 3);
+			if (nFireButtons == 6) {
+				INT32 in6[3] = {nPgmButtons[nPlayer][3], nPgmButtons[nPlayer][4], nPgmButtons[nPlayer][5]};
+				snprintf(name, sizeof(name), "P%i Buttons XYZ", nPlayer + 1);
+				addCombo(name, in6, 3);
+			}
 		}
 	}
 
@@ -278,8 +384,8 @@ INT32 GameInpInit()
 	nGameInpCount = 0;
 	nMacroCount = 0;
 
-	// We only support up to 4 macros for now
-	nMaxMacro = nMaxPlayers * 4;
+	// per-player combo macros: neogeo/pgm 11 + vs-diagonals 4 = 15 max
+	nMaxMacro = nMaxPlayers * 16;
 
 	while (BurnDrvGetInputInfo(NULL,nGameInpCount) == 0)
 		nGameInpCount++;
@@ -3038,7 +3144,7 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 // pfbneo turbo (auto-fire) support.
 // ---------------------------------------------------------------------------
 
-// Returns the bitmask of the 8 turbo-able buttons actually used by the current
+// Returns the bitmask of the 10 turbo-able buttons actually used by the current
 // (active) driver mapping.
 //  - remap == false : scan the existing mapping table (game already running,
 //                     exact result, no side effects)

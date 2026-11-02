@@ -33,27 +33,31 @@ namespace pfbneo_turbo {
     // static data
     // ---------------------------------------------------------------------------
 
-    // retro joystick ids of the 8 turbo-able buttons, in menu order
+    // retro joystick ids of the 10 turbo-able buttons, in menu order
     static const unsigned int s_slotIds[TURBO_BUTTON_COUNT] = {
-        RETRO_DEVICE_ID_JOYPAD_A,   // 0: A
-        RETRO_DEVICE_ID_JOYPAD_B,   // 1: B
-        RETRO_DEVICE_ID_JOYPAD_X,   // 2: X
-        RETRO_DEVICE_ID_JOYPAD_Y,   // 3: Y
-        RETRO_DEVICE_ID_JOYPAD_L,   // 4: LT
-        RETRO_DEVICE_ID_JOYPAD_R,   // 5: RT
-        RETRO_DEVICE_ID_JOYPAD_L2,  // 6: LB
-        RETRO_DEVICE_ID_JOYPAD_R2   // 7: RB
+        RETRO_DEVICE_ID_JOYPAD_A,       // 0: A
+        RETRO_DEVICE_ID_JOYPAD_B,       // 1: B
+        RETRO_DEVICE_ID_JOYPAD_X,       // 2: X
+        RETRO_DEVICE_ID_JOYPAD_Y,       // 3: Y
+        RETRO_DEVICE_ID_JOYPAD_L,       // 4: LT
+        RETRO_DEVICE_ID_JOYPAD_R,       // 5: RT
+        RETRO_DEVICE_ID_JOYPAD_L2,      // 6: LB
+        RETRO_DEVICE_ID_JOYPAD_R2,      // 7: RB
+        RETRO_DEVICE_ID_JOYPAD_L3,      // 8: L3
+        RETRO_DEVICE_ID_JOYPAD_R3       // 9: R3
     };
 
     static const char *s_slotNames[TURBO_BUTTON_COUNT] = {
         "TURBO_A", "TURBO_B", "TURBO_X", "TURBO_Y",
-        "TURBO_LT", "TURBO_RT", "TURBO_LB", "TURBO_RB"
+        "TURBO_LT", "TURBO_RT", "TURBO_LB", "TURBO_RB",
+        "TURBO_L3", "TURBO_R3"
     };
 
     // display names come from ui_text_def.h (Chinese on switch builds)
     static const char *s_slotDisplayNames[TURBO_BUTTON_COUNT] = {
         TEXT_MENU_TURBO_A, TEXT_MENU_TURBO_B, TEXT_MENU_TURBO_X, TEXT_MENU_TURBO_Y,
-        TEXT_MENU_TURBO_LT, TEXT_MENU_TURBO_RT, TEXT_MENU_TURBO_LB, TEXT_MENU_TURBO_RB
+        TEXT_MENU_TURBO_LT, TEXT_MENU_TURBO_RT, TEXT_MENU_TURBO_LB, TEXT_MENU_TURBO_RB,
+        TEXT_MENU_TURBO_L3, TEXT_MENU_TURBO_R3
     };
 
     // 6 rate levels: [period_frames, on_frames]
@@ -77,7 +81,7 @@ namespace pfbneo_turbo {
     static unsigned int s_enabledMask = 0;         // bit i set -> button i turbo on
     static int s_rateIndex = s_rateDefaultIndex;
     static int s_lastRateIndex = s_rateDefaultIndex;
-    static unsigned int s_supportedMask = 0xFF;    // buttons used by the current rom
+    static unsigned int s_supportedMask = 0x3FF;    // buttons used by the current rom
 
     // ---------------------------------------------------------------------------
     // helpers
@@ -159,18 +163,18 @@ namespace pfbneo_turbo {
             s_buttonOptCached[i] = nullptr;
         }
         s_enabledMask = 0;
-        s_supportedMask = 0xFF;
+        s_supportedMask = 0x3FF;
         resetCounters();
     }
 
     // ---------------------------------------------------------------------------
-    // determine which of the 8 turbo buttons the current rom actually uses.
+    // determine which of the 10 turbo buttons the current rom actually uses.
     //
     // 1) if the requested rom is already the active/mapped driver (in-game menu),
     //    scan the existing mapping table -> exact result, no side effects.
     // 2) otherwise (rom list menu, game not started), activate the driver and
     //    run the real input mapping once (same code path as InputInit), then scan.
-    // 3) on failure, fall back to "all 8 buttons".
+    // 3) on failure, fall back to "all 10 buttons".
     // ---------------------------------------------------------------------------
     static int getSupportedMaskForGame(const ss_api::Game &game) {
         int oldActive = nBurnDrvActive;
@@ -179,7 +183,7 @@ namespace pfbneo_turbo {
         // activate the driver (same helper used by the emulator on game load)
         PFBNEOUtility::setDriverActive(game);
         if (nBurnDrvActive >= nBurnDrvCount) {
-            return 0xFF;
+            return 0x3FF;
         }
 
         bool sameDriver = (oldActive == (int) nBurnDrvActive);
@@ -194,7 +198,7 @@ namespace pfbneo_turbo {
                 // requesting a different rom while another one is running:
                 // this should not happen through the UI, do not touch the
                 // running mapping, just show all buttons
-                return 0xFF;
+                return 0x3FF;
             }
             // rom list case (no game running): run the real mapping once
             mask = PfbneoTurboGetUsedMask(true);
