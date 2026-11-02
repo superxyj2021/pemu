@@ -79,7 +79,7 @@ PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(rende
     // (cpu max + gpu 460mhz on game load). default is full speed.
     // placed right after FRAMESKIP so it appears below it in the menu.
     group->addOption({
-        "PERF_MODE", {TEXT_MENU_EMU_PERF_SAVE, TEXT_MENU_EMU_PERF_FULL}, 1,
+        "PERF_MODE", {TEXT_MENU_EMU_PERF_SAVE, TEXT_MENU_EMU_PERF_FULL}, 0,
         EMU_PERF_MODE, "", TEXT_MENU_EMU_PERF
     });
 #endif
