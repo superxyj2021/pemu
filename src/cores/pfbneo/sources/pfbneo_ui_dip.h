@@ -65,6 +65,7 @@ private:
     int optionIndex = 0;
     int highlightIndex = 0;
     int maxLines = 0;
+    bool m_changed = false;   // a switch was modified in this dialog session
     float lineHeight = 0;
 
     c2d::C2DClock m_scrollClock;

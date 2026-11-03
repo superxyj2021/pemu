@@ -148,6 +148,12 @@ namespace pemu {
         // allows a core to add its own per-rom options (e.g. pfbneo turbo)
         virtual void onGameConfigCreate(const ss_api::Game &game, c2d::config::Config *gameConfig) { (void) game; (void) gameConfig; }
 
+        // called when a rom scan finished (startup scan or manual rescan).
+        // cores can rebuild lookup tables that are normally parsed lazily
+        // (e.g. pfbneo command.dat / cheat databases) so the first menu open
+        // or game load does not have to pay the parse cost.
+        virtual void onRomScanCompleted() {}
+
         // return the list of config groups used by the menu:
         //  - isGame == false: the global/main config groups
         //  - isGame == true : the per-rom (game) config groups

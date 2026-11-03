@@ -50,6 +50,12 @@ namespace pemu {
         // input so A cannot launch a rom / B reaches the dialog)
         bool isDonateDialogOpen();
 
+        // remember the menu option (by display name) to highlight when the
+        // menu is reopened: set by the extra dialogs (cheat/key/dip/memcard/
+        // ips) right before they call load(true), so B on the dialog returns
+        // to the menu with the originating option selected. consumed by load().
+        void setRestoreOption(const std::string &name) { m_restoreOptionName = name; }
+
     private:
         void updateLines();
 
@@ -94,6 +100,9 @@ namespace pemu {
         ScrollState m_scrollName;
         ScrollState m_scrollValue;
         float m_lastScrollTime = 0.f;
+
+        // menu option to highlight on the next load() (see setRestoreOption)
+        std::string m_restoreOptionName;
     };
 }
 

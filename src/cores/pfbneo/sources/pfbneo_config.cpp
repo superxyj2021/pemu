@@ -5,6 +5,9 @@
 #include <string>
 #include "skeleton/pemu.h"
 #include "pfbneo_config.h"
+#include "fbneo/pfbneo_memcard.h"
+#include "fbneo/pfbneo_ips.h"
+#include "fbneo/pfbneo_movelist.h"
 
 using namespace c2d;
 using namespace pemu;
@@ -19,6 +22,15 @@ PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(rende
 
     // pfbneo DIP: init defaults
     pfbneo_dip::init();
+
+    // pfbneo memcard: init defaults
+    pfbneo_memcard::init();
+
+    // pfbneo IPS: init defaults
+    pfbneo_ips::init();
+
+    // pfbneo move list: init defaults
+    pfbneo_movelist::init();
 
     c2d::Io *io = renderer->getIo();
 

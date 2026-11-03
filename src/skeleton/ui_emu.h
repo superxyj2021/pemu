@@ -37,6 +37,26 @@ namespace pemu {
         // used by dialogs whose changes only take effect on a reset.
         virtual void requestReset() {}
 
+        // a dialog changed a setting that needs a game restart: called by the
+        // in-game menu when it closes. returns the pending action:
+        //   0 = nothing changed (resume normally),
+        //   1 = soft reset suffices (e.g. DIP / memory card),
+        //   2 = the game must be reloaded (e.g. IPS rom patches).
+        // the menu calls requestReset()+resume() for 1 and reload() for 2.
+        virtual int takeSettingsAction() { return 0; }
+
+        // mark that a dialog changed a setting needing a restart: action 1 =
+        // soft reset, 2 = reload. the higher action wins (reload > reset).
+        virtual void markSettingsAction(int action) { (void) action; }
+
+        // reload the running game so changed settings apply (default: resume).
+        virtual void reload() { resume(); }
+
+        // attach core-specific dialogs to the ui tree (e.g. the cheat dialog).
+        // called once after UiMain::init() from the shared core main; cores
+        // without extra dialogs leave the default no-op.
+        virtual void attachToUi() {}
+
         UiMain *getUi();
 
         C2DUIVideo *getVideo();

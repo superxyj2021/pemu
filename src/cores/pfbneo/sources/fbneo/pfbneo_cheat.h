@@ -53,6 +53,12 @@ namespace pfbneo_cheat {
     // the core frees pCheatInfo in CheatExit() when the driver exits).
     void load(const ss_api::Game &game, c2d::Io *io);
 
+    // (re)build the mame database section index now (the arcade cheat.dat is
+    // indexed once here after the startup rom scan and after every rescan, so
+    // a first game load never pays the file read; other databases such as
+    // wayder_cheat.dat / the NES-SNES ones rebuild on demand, they are small).
+    void preload();
+
     // which source the loaded cheats came from (filled by load(); used by the
     // dialog to annotate the title when cheats were inherited from the parent)
     CheatSource getSource();

@@ -50,6 +50,7 @@ file(GLOB SRC_BURNER
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burner/sdl/replay.cpp
 )
 list(REMOVE_ITEM SRC_BURNER
+        ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burner/sdl/ips_manager.cpp
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burner/conc.cpp
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burner/cong.cpp
         ${CMAKE_SOURCE_DIR}/external/cores/FBNeo/src/burner/dat.cpp

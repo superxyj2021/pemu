@@ -35,6 +35,14 @@
 #define TEXT_MENU_EMU_PERF_SAVE                         "POWER_SAVE"
 #define TEXT_MENU_EMU_PERF_FULL                         "FULL_SPEED"
 
+// scaling option values (logic compares against these strings)
+#define TEXT_SCALING_NONE                               "OFF"
+#define TEXT_SCALING_FIT                                "FIT SCREEN"
+#define TEXT_SCALING_FULL                               "FULL SCREEN"
+#define TEXT_SCALING_MODE_AUTO                          "AUTO"
+#define TEXT_SCALING_MODE_ASPECT                        "KEEP ASPECT"
+#define TEXT_SCALING_MODE_INTEGER                       "INTEGER"
+
 // input options
 #define TEXT_MENU_GAMEPAD                               "GAMEPAD"
 #define TEXT_MENU_JOY_UP                                "JOY_UP"
@@ -89,6 +97,7 @@
 #define TEXT_MENU_TURBO_RT                              "TURBO_RT"
 #define TEXT_MENU_TURBO_L3                              "TURBO_L3"
 #define TEXT_MENU_TURBO_R3                              "TURBO_R3"
+#define TEXT_MENU_TURBO_HINT                            "TURBO RATE: 4Hz SLOWEST, 30Hz FASTEST, DEFAULT 8Hz"
 
 // pfbneo key settings (按键设置) dialog
 #define TEXT_MENU_KEYS                                  "KEY SETTINGS"
@@ -109,8 +118,46 @@
 #define TEXT_MENU_DIP                                   "DIP SWITCHES"
 #define TEXT_DIP_EMPTY                                  "NO DIP SWITCHES FOR THIS GAME"
 
+// pfbneo memory card (记忆卡) dialog
+#define TEXT_MENU_MEMCARD                               "MEMORY CARD"
+#define TEXT_MEMCARD_EMPTY                              "EMPTY SLOT"
+#define TEXT_MEMCARD_DEFAULT                            "DEFAULT CARD"
+#define TEXT_MEMCARD_CREATE                             "CREATE CARD"
+#define TEXT_MEMCARD_SLOT_FMT                           "PGM2 SLOT PLAYER %d: %d CARD FILE(S)"
+#define TEXT_MEMCARD_NO_SUPPORT                         "NO MEMORY CARD SUPPORT"
+
 // pfbneo in-game reset (重启游戏)
 #define TEXT_MENU_RESET                                 "RESET GAME"
+
+// pfbneo IPS patch (IPS补丁) dialog
+#define TEXT_MENU_IPS                                   "IPS PATCHES"
+#define TEXT_MENU_IPS_ENABLED                           "ON"
+#define TEXT_MENU_IPS_DISABLED                          "OFF"
+
+// pfbneo dialog-change hints (shown when a dialog is closed after a change)
+#define TEXT_HINT_DIP_CHANGED                           "DIP SWITCHES CHANGED - RESET THE GAME"
+#define TEXT_HINT_MEMCARD_CHANGED                       "MEMORY CARD CHANGED - RESET THE GAME"
+#define TEXT_HINT_IPS_CHANGED                           "IPS PATCHES CHANGED - RESTART THE GAME"
+
+// pfbneo move list (出招表) dialog
+#define TEXT_MENU_MOVELIST                              "MOVE LIST"
+#define TEXT_MOVELIST_EMPTY                             "NO MOVE LIST FOR THIS GAME"
+#define TEXT_MOVELIST_EXPAND                            "EXPAND"
+#define TEXT_MOVELIST_COLLAPSE                          "COLLAPSE"
+
+// pfbneo cheat (金手指) - runtime only, rom menu entry
+#define TEXT_CHEATS                                     "CHEATS"
+#define TEXT_CHEAT_DISABLED                             "DISABLED"
+#define TEXT_CHEAT_ENABLED                              "ENABLED"
+#define TEXT_DIALOG_CURRENT                             "  <-"
+#define TEXT_DIALOG_EMPTY                               "NO CHEAT FILE FOR THIS GAME"
+
+// pfbneo donate (打赏作者) dialog
+#define TEXT_MONEY                                      "DONATE"
+#define TEXT_MONEY2                                     "DONATE AUTHOR"
+#define TEXT_MONEY2_TEXT1                               "DEVELOPING NEW FEATURES IS NOT EASY, PLEASE SUPPORT THE AUTHOR :)"
+#define TEXT_MONEY2_VERSION                             "FBNeo Plus version: "
+#define TEXT_MONEY2_VERSION_DEFAULT                     "7.2.3b20261028"
 
 // main framework
 #define TEXT_NAVIGATION                                 "NAVIGATION"
@@ -126,6 +173,7 @@
 #define TEXT_STATES                                     "STATES"
 #define TEXT_GO                                         "GO"
 #define TEXT_SCAN_ROMS                                  "SCAN ROMS"
+#define TEXT_QUIT                                       "QUIT"
 
 // scanning overlay
 #define TEXT_MSG_SCANNING_TITLE                         "SCANNING ROMS, PLEASE WAIT..."
@@ -136,6 +184,10 @@
 #define TEXT_NO_SAVE                                    "NO SAVE"
 #define TEXT_NO_PIC                                     "NO PIC"
 
+#define TEXT_ROM_SYSTEM_PRE_90S                         "OTHER ARCADE - PRE 90S"
+#define TEXT_ROM_SYSTEM_POST_90S                        "OTHER ARCADE - POST 90S"
+#define TEXT_GAME_ALL                                   "ALL SYSTEMS"
+
 #define TEXT_BUTTON_LOAD                                "LOAD"
 #define TEXT_BUTTON_SAVE                                "SAVE"
 #define TEXT_BUTTON_OK                                  "OK"
@@ -145,6 +197,7 @@
 #define TEXT_MENU_AUDIO_FREQUENCY                       "AUDIO_FREQUENCY"
 #define TEXT_MENU_AUDIO_INTERPOLATION                   "AUDIO_INTERPOLATION"
 #define TEXT_MENU_AUDIO_FM_INTERPOLATION                "AUDIO_FM_INTERPOLATION"
+#define TEXT_MENU_AUDIO_SYNC_COMMENT                    "ON: PERFECT AUDIO - OFF: SLIGHT AUDIO STUTTER"
 #define TEXT_MENU_ROTATION                              "ROTATION"
 #define TEXT_MENU_NEOBIOS                               "NEOBIOS"
 #define TEXT_MENU_FRAMESKIP                             "FRAMESKIP"
@@ -184,6 +237,8 @@
 #define TEXT_MSG_PRESS_BUTTON2_FOR_DIAG_MENU            "TIPS: PRESS START BUTTON 2 SECONDS FOR DIAG MENU..."
 #define TEXT_MSG_PRESS_COIN_BUTTON_TO_RESET             "TIPS: PRESS COIN BUTTON 2 SECONDS TO RESET CURRENT GAME..."
 #define TEXT_MSG_PLEASE_WAIT                            "Please wait..."
+#define TEXT_MSG_AUDIO_FM_INTERPOLATION                 "AUDIO QUALITY VS CPU: 3=FM RESAMPLED AT HARDWARE CLOCK (BEST QUALITY, HIGH CPU); 0/1=DIRECT AT OUTPUT RATE (LESS CPU). RESTART REQUIRED"
+#define TEXT_MSG_DONATE_LOCKED                          "PROGRAM FILE VERIFICATION FAILED, POSSIBLY TAMPERED, FEATURES LOCKED."
 
 // pnes
 #define TEXT_MSG_PNES_INVALID_FILE                      "INVALID FILE"
@@ -200,6 +255,18 @@
 #define TEXT_UNKNOWN                                    "UNKNOWN"
 #define TEXT_NONE                                       "NONE"
 #define TEXT_TITTLE_MAIN_OPTIONS                        "MAIN OPTIONS"
+
+#define TEXT_OPTION_ON                                  "ON"
+#define TEXT_OPTION_OFF                                 "OFF"
+#define TEXT_OPTION_ALL                                 "ALL"
+#define TEXT_OPTION_POINT                               "NEAREST"
+#define TEXT_OPTION_LINEAR                              "BILINEAR"
+#define TEXT_OPTION_ASPECT                              "KEEP ASPECT RATIO"
+#define TEXT_OPTION_INTEGER                             "INTEGER"
+#define TEXT_OPTION_FIT                                 "STRETCH"
+#define TEXT_OPTION_FULL                                "FULL SCREEN"
+#define TEXT_OPTION_AUTO                                "AUTO"
+#define TEXT_OPTION_FACTOR                              "X"
 
 #define TEXT_PNES_DISK_FLIP                             "FLIP DISK(FDS ONLY)"
 #define TEXT_MENU_AUDIO_SYNC                            "AUDIO_SYNC"
@@ -380,8 +447,32 @@
 #define TEXT_MENU_DIP                                   "DIP 开关"
 #define TEXT_DIP_EMPTY                                  "该游戏没有 DIP 开关"
 
+// pfbneo memory card (记忆卡) dialog
+#define TEXT_MENU_MEMCARD                               "记忆卡"
+#define TEXT_MEMCARD_EMPTY                              "空插槽"
+#define TEXT_MEMCARD_DEFAULT                            "默认卡"
+#define TEXT_MEMCARD_CREATE                             "创建新卡"
+#define TEXT_MEMCARD_SLOT_FMT                           "PGM2 卡槽 玩家 %d：包含%d个角色卡文件"
+#define TEXT_MEMCARD_NO_SUPPORT                         "该游戏不支持记忆卡"
+
 // pfbneo in-game reset (重启游戏)
 #define TEXT_MENU_RESET                                 "重启游戏"
+
+// pfbneo IPS patch (IPS补丁) dialog
+#define TEXT_MENU_IPS                                   "IPS补丁"
+#define TEXT_MENU_IPS_ENABLED                           "启用"
+#define TEXT_MENU_IPS_DISABLED                          "禁用"
+
+// pfbneo dialog-change hints (shown when a dialog is closed after a change)
+#define TEXT_HINT_DIP_CHANGED                           "DIP 开关已修改，重置游戏后生效"
+#define TEXT_HINT_MEMCARD_CHANGED                       "记忆卡设置已更改，重置游戏后生效"
+#define TEXT_HINT_IPS_CHANGED                           "IPS 补丁已修改，完全重载游戏后生效"
+
+// pfbneo move list (出招表) dialog
+#define TEXT_MENU_MOVELIST                              "出招表"
+#define TEXT_MOVELIST_EMPTY                             "该游戏没有出招表"
+#define TEXT_MOVELIST_EXPAND                            "展开"
+#define TEXT_MOVELIST_COLLAPSE                          "收起"
 
 // main framework
 #define TEXT_NAVIGATION                                 "导航"
@@ -502,6 +593,8 @@
 
 #define TEXT_UNKNOWN                                    "未知"
 #define TEXT_NONE                                       "无"
+
+#define TEXT_TITTLE_MAIN_OPTIONS                        "主选项"
 
 
 

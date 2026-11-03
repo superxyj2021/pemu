@@ -14,8 +14,14 @@
 #include "pfbneo_ui_cheat.h"
 #include "pfbneo_ui_key.h"
 #include "pfbneo_ui_dip.h"
+#include "pfbneo_ui_memcard.h"
+#include "pfbneo_ui_ips.h"
+#include "pfbneo_ui_movelist.h"
 #include "fbneo/pfbneo_cheat.h"
 #include "fbneo/pfbneo_dip.h"
+#include "fbneo/pfbneo_memcard.h"
+#include "fbneo/pfbneo_ips.h"
+#include "fbneo/pfbneo_movelist.h"
 #include "retro_input_wrapper.h"
 
 #include <chrono>
@@ -71,11 +77,21 @@ PFBAUiEmu::PFBAUiEmu(UiMain *ui) : UiEmu(ui) {
 
     // pfbneo DIP switch dialog (same attach strategy)
     dipDialog = new PfbneDipDialog(ui);
+
+    // pfbneo memory card dialog (same attach strategy)
+    memcardDialog = new PfbneMemcardDialog(ui);
+
+    // pfbneo IPS patch dialog (same attach strategy)
+    ipsDialog = new PfbneIpsDialog(ui);
+
+    // pfbneo move list (出招表) dialog (same attach strategy)
+    movelistDialog = new PfbneMovelistDialog(ui);
 }
 
 bool PFBAUiEmu::isExtraDialogOpen() {
     return (cheatDialog && cheatDialog->isVisible()) || (keyDialog && keyDialog->isVisible())
-           || (dipDialog && dipDialog->isVisible());
+           || (dipDialog && dipDialog->isVisible()) || (memcardDialog && memcardDialog->isVisible())
+           || (ipsDialog && ipsDialog->isVisible()) || (movelistDialog && movelistDialog->isVisible());
 }
 
 bool PFBAUiEmu::hasExtraFeature(const std::string &name) {
@@ -84,6 +100,26 @@ bool PFBAUiEmu::hasExtraFeature(const std::string &name) {
         // defines DIP switches (checked after loadGame built the switch list)
         return pfbneo_dip::getRowCount() > 0;
     }
+    if (name == TEXT_MENU_MEMCARD) {
+        // only offer the memory card menu when the selected game actually
+        // supports the external card (NEOGEO cart games / PGM2 card versions)
+        return pfbneo_memcard::hasMemcard();
+    }
+    if (name == TEXT_MENU_IPS) {
+        // only offer the IPS patch menu when the selected game actually has
+        // .dat patch files under <data path>/ips/<driver>/
+        return pfbneo_ips::hasIps();
+    }
+    if (name == TEXT_MENU_MOVELIST) {
+        // only offer the move list menu when command.dat has an entry for the
+        // selected game (under <data path>/commands/command.dat)
+        return pfbneo_movelist::hasMovelist();
+    }
+    if (name == TEXT_CHEATS) {
+        // only offer the cheat menu when the running game actually has cheats
+        // (loaded from an ini file or a mame .dat database at game start)
+        return pfbneo_cheat::getCheatCount() > 0;
+    }
     return false;
 }
 
@@ -91,11 +127,44 @@ void PFBAUiEmu::requestReset() {
     m_resetRequested = true;
 }
 
+void PFBAUiEmu::markSettingsAction(int action) {
+    // the higher action wins: a reload (2) also covers any pending reset (1)
+    if (action > m_settingsAction) {
+        m_settingsAction = action;
+    }
+}
+
+int PFBAUiEmu::takeSettingsAction() {
+    int action = m_settingsAction;
+    m_settingsAction = 0;
+    return action;
+}
+
+void PFBAUiEmu::reload() {
+    // called when the in-game menu closes while a dialog changed a setting
+    // that only takes effect at game start: stop the running game and load it
+    // again, which re-runs DrvInit (IPS rom patches) and onGameStart (DIP
+    // switches + memory card insertion).
+    if (pMain->getUiMenu()) {
+        pMain->getUiMenu()->setVisibility(Visibility::Hidden, true);
+    }
+    if (currentGame.path.empty()) {
+        resume();
+        return;
+    }
+    Game game = currentGame;
+    stop();
+    load(game);
+}
+
 void PFBAUiEmu::attachToUi() {
     if (cheatDialog && !m_dialogAttached) {
         pMain->add(cheatDialog);
         pMain->add(keyDialog);
         pMain->add(dipDialog);
+        pMain->add(memcardDialog);
+        pMain->add(ipsDialog);
+        pMain->add(movelistDialog);
         m_dialogAttached = true;
     }
 }
@@ -122,11 +191,36 @@ bool PFBAUiEmu::onMenuExtra(const std::string &name) {
         }
         return true;
     }
+    if (name == TEXT_MENU_MEMCARD) {
+        // rom menu / in-game menu -> 记忆卡: open the memory card dialog
+        if (memcardDialog) {
+            memcardDialog->open();
+        }
+        return true;
+    }
+    if (name == TEXT_MENU_IPS) {
+        // rom menu / in-game menu -> IPS补丁: open the IPS patch dialog
+        if (ipsDialog) {
+            ipsDialog->open();
+        }
+        return true;
+    }
+    if (name == TEXT_MENU_MOVELIST) {
+        // rom menu / in-game menu -> 出招表: open the move list dialog
+        if (movelistDialog) {
+            movelistDialog->open();
+        }
+        return true;
+    }
     if (name == TEXT_MENU_RESET) {
         // in-game menu -> 重启游戏: latch a reset request; the pulse is sent
         // in onUpdate() right after InputMake() so the driver frame sees it
         // (same timing as the Select-button long-press reset)
         m_resetRequested = true;
+        // the reset also covers any dialog change that is still pending
+        // (DIP switches latch at reset), so it must not trigger a restart
+        // when the menu reopens later
+        m_settingsAction = 0;
         resume();
         return true;
     }
@@ -195,6 +289,10 @@ int PFBAUiEmu::getSekCpuCore() {
 int PFBAUiEmu::load(const ss_api::Game &game) {
     // clear any romset error from a previous failed load
     ClearRomsetError();
+    // a fresh game load has no pending "restart action" state from an
+    // earlier dialog session (it was consumed on the previous menu close or
+    // belongs to the previous game)
+    m_settingsAction = 0;
 
     // embedded-image probe: re-check every time a rom is about to be opened.
     // digest split in two halves so the 64-bit reference is never visible as
@@ -286,6 +384,10 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
     nBurnSoundRate = aud->getSampleRate();
     nBurnSoundLen = aud->getSamples();
     pBurnSoundOut = (INT16 *) malloc(aud->getSamplesSize());
+    // pfbneo IPS: apply the enabled patches BEFORE the core loads the roms
+    // (DrvInit -> BurnLoadRom -> IpsApplyPatches). the per-rom IPS options
+    // were created by onGameConfigCreate and already restored by load().
+    pfbneo_ips::applyEnabled();
     if (DrvInit((int) nBurnDrvActive, false) != 0) {
         printf("\nPFBAUiEmu::load: driver initialisation failed for %s (%s), driver: %s (%s)\n",
                currentGame.name.c_str(), currentGame.path.c_str(),
@@ -390,6 +492,9 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
     // (called after InputInit mapped GameInp and ran InpDIPSWResetDIPs)
     pfbneo_dip::onGameStart();
 
+    // pfbneo memcard: insert the saved card selections into the running core
+    pfbneo_memcard::onGameStart();
+
     // pfbneo cheat: parse cheats/<rom>.ini and rebuild the core list.
     // runtime-only: nothing is persisted, all cheats start inactive.
     pfbneo_cheat::load(game, pMain->getIo());
@@ -427,6 +532,12 @@ void PFBAUiEmu::stop() {
     pfbneo_keybind::onGameStop();
     // pfbneo DIP: clear runtime state
     pfbneo_dip::onGameStop();
+    // pfbneo memcard: clear runtime state
+    pfbneo_memcard::onGameStop();
+    // pfbneo IPS: clear runtime state + reset the core patch globals
+    pfbneo_ips::onGameStop();
+    // pfbneo move list: clear runtime state
+    pfbneo_movelist::onGameStop();
     // pfbneo cheat: clear runtime state (the core's CheatExit() already
     // freed the pCheatInfo list during DrvExit); hide the dialog if open
     if (cheatDialog) {
@@ -438,7 +549,17 @@ void PFBAUiEmu::stop() {
     if (dipDialog) {
         dipDialog->setVisibility(Visibility::Hidden, true);
     }
+    if (memcardDialog) {
+        memcardDialog->setVisibility(Visibility::Hidden, true);
+    }
+    if (ipsDialog) {
+        ipsDialog->setVisibility(Visibility::Hidden, true);
+    }
+    if (movelistDialog) {
+        movelistDialog->setVisibility(Visibility::Hidden, true);
+    }
     m_resetRequested = false;
+    m_settingsAction = 0;
     pfbneo_cheat::reset();
     DrvExit();
     if (pBurnSoundOut) {
@@ -457,7 +578,8 @@ bool PFBAUiEmu::onInput(c2d::Input::Player *players) {
     // pfbneo cheat/key dialogs: while one is open, let the dialog (added
     // after the emu in the ui tree) handle all input instead of the game
     if ((cheatDialog && cheatDialog->isVisible()) || (keyDialog && keyDialog->isVisible())
-        || (dipDialog && dipDialog->isVisible())) {
+        || (dipDialog && dipDialog->isVisible()) || (memcardDialog && memcardDialog->isVisible())
+        || (ipsDialog && ipsDialog->isVisible()) || (movelistDialog && movelistDialog->isVisible())) {
         return false;
     }
 

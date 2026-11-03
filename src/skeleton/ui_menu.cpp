@@ -80,7 +80,7 @@ public:
         // this is a menu title (or custom option)
         if (!option) {
             // custom options, // === 新增: "打赏作者" 菜单项显示"执行" ===
-            if (name == TEXT_STATES || name == TEXT_QUIT || name == TEXT_MONEY2 || name == TEXT_CHEATS || name == TEXT_SCAN_ROMS || name == TEXT_MENU_KEYS || name == TEXT_MENU_DIP || name == TEXT_MENU_RESET) {
+            if (name == TEXT_STATES || name == TEXT_QUIT || name == TEXT_MONEY2 || name == TEXT_CHEATS || name == TEXT_SCAN_ROMS || name == TEXT_MENU_KEYS || name == TEXT_MENU_DIP || name == TEXT_MENU_RESET || name == TEXT_MENU_MEMCARD || name == TEXT_MENU_IPS || name == TEXT_MENU_MOVELIST) {
                 p_value->setVisibility(Visibility::Visible);
                 p_value->setString(TEXT_GO);
                 return;
@@ -265,7 +265,7 @@ void UiMenu::load(bool isGame) {
     for (auto &group: *groups) {
         // skip some options if needed
         if (group.getName() == "ROMS") continue;
-		if (group.getName() == "GAMEPAD" || group.getName() == "KEYBOARD" || group.getName() == "KEYBIND" || group.getName() == "DIP") continue;
+		if (group.getName() == "GAMEPAD" || group.getName() == "KEYBOARD" || group.getName() == "KEYBIND" || group.getName() == "DIP" || group.getName() == "MEMCARD" || group.getName() == "IPS") continue;
         if (isRomMenu && (group.getName() == "UI_OPTIONS" || group.getName() == "UI_FILTERING")) continue;
         // push group title
 		// get Chinese name
@@ -299,9 +299,30 @@ void UiMenu::load(bool isGame) {
     }
     // pfbneo in-game "reset game": only while a game is actually running
     if (isRomMenu && isEmuRunning) menu_options.push_back({TEXT_MENU_RESET, nullptr});
+    // pfbneo memory card: rom menu + in-game menu entry, ONLY when the
+    // selected game's driver actually supports the external memory card
+    // (NEOGEO cart games / PGM2 card versions)
+    if (isRomMenu && ui->getUiEmu() && ui->getUiEmu()->hasExtraFeature(TEXT_MENU_MEMCARD)) {
+        menu_options.push_back({TEXT_MENU_MEMCARD, nullptr});
+    }
+    // pfbneo IPS patches: rom menu + in-game menu entry, ONLY when the
+    // selected game has .dat files under <data path>/ips/<driver>/
+    if (isRomMenu && ui->getUiEmu() && ui->getUiEmu()->hasExtraFeature(TEXT_MENU_IPS)) {
+        menu_options.push_back({TEXT_MENU_IPS, nullptr});
+    }
+    // pfbneo move list (出招表): rom menu + in-game menu entry, ONLY when
+    // command.dat has an entry for the selected game
+    if (isRomMenu && ui->getUiEmu() && ui->getUiEmu()->hasExtraFeature(TEXT_MENU_MOVELIST)) {
+        menu_options.push_back({TEXT_MENU_MOVELIST, nullptr});
+    }
     // pfbneo cheat: runtime-only, rom menu entry - only while a game is
     // actually running (NOT in the main screen's rom menu opened with Menu2)
-    if (isRomMenu && isEmuRunning) menu_options.push_back({TEXT_CHEATS, nullptr});
+    // and the running game actually has cheats (loaded at game start from an
+    // ini file or a mame .dat database; games without cheats get no entry)
+    if (isRomMenu && isEmuRunning && ui->getUiEmu()
+        && ui->getUiEmu()->hasExtraFeature(TEXT_CHEATS)) {
+        menu_options.push_back({TEXT_CHEATS, nullptr});
+    }
     menu_options.push_back({TEXT_QUIT, nullptr});
 
     // shrink the menu box to fit the item count (vertical center, never
@@ -312,6 +333,25 @@ void UiMenu::load(bool isGame) {
 
     // update options lines/items (first option should always be a menu option)
     onKeyDown();
+
+    // when a dialog (cheat/key/dip/memcard/ips) closed and asked to return to
+    // the menu, restore the highlight on the option that opened it instead of
+    // landing on the first option
+    if (!m_restoreOptionName.empty()) {
+        for (size_t i = 0; i < menu_options.size(); i++) {
+            if (menu_options[i].name == m_restoreOptionName) {
+                int middle = maxLines / 2;
+                int maxOption = std::max(0, (int) menu_options.size() - maxLines);
+                optionIndex = std::min(std::max(0, (int) i - middle), maxOption);
+                highlightIndex = (int) i - optionIndex;
+                if (highlightIndex < 0) highlightIndex = 0;
+                if (highlightIndex >= maxLines) highlightIndex = maxLines - 1;
+                break;
+            }
+        }
+        m_restoreOptionName.clear();
+        updateLines();
+    }
 
     // finally, show me
     if (!isVisible()) {
@@ -369,7 +409,7 @@ void UiMenu::onKeyUp() {
 
     // skip menus
     auto opt = menu_options.at(optionIndex + highlightIndex);
-    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2 && opt.name != TEXT_CHEATS && opt.name != TEXT_SCAN_ROMS && opt.name != TEXT_MENU_KEYS && opt.name != TEXT_MENU_DIP && opt.name != TEXT_MENU_RESET) {
+    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2 && opt.name != TEXT_CHEATS && opt.name != TEXT_SCAN_ROMS && opt.name != TEXT_MENU_KEYS && opt.name != TEXT_MENU_DIP && opt.name != TEXT_MENU_RESET && opt.name != TEXT_MENU_MEMCARD && opt.name != TEXT_MENU_IPS && opt.name != TEXT_MENU_MOVELIST) {
         return onKeyUp();
     }
 
@@ -393,7 +433,7 @@ void UiMenu::onKeyDown() {
 
     // skip menus
     auto opt = menu_options.at(optionIndex + highlightIndex);
-    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2 && opt.name != TEXT_CHEATS && opt.name != TEXT_SCAN_ROMS) {
+    if (opt.option == nullptr && opt.name != TEXT_STATES && opt.name != TEXT_QUIT && opt.name != TEXT_MONEY2 && opt.name != TEXT_CHEATS && opt.name != TEXT_SCAN_ROMS && opt.name != TEXT_MENU_KEYS && opt.name != TEXT_MENU_DIP && opt.name != TEXT_MENU_RESET && opt.name != TEXT_MENU_MEMCARD && opt.name != TEXT_MENU_IPS && opt.name != TEXT_MENU_MOVELIST) {
         return onKeyDown();
     }
 
@@ -639,6 +679,18 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
             // pfbneo DIP switch dialog: hide the menu and let the core handle it
             setVisibility(Visibility::Hidden, true);
             ui->getUiEmu()->onMenuExtra(TEXT_MENU_DIP);
+        } else if (lines.at(highlightIndex)->p_name->getString() == TEXT_MENU_MEMCARD) {
+            // pfbneo memory card dialog: hide the menu and let the core handle it
+            setVisibility(Visibility::Hidden, true);
+            ui->getUiEmu()->onMenuExtra(TEXT_MENU_MEMCARD);
+        } else if (lines.at(highlightIndex)->p_name->getString() == TEXT_MENU_IPS) {
+            // pfbneo IPS patch dialog: hide the menu and let the core handle it
+            setVisibility(Visibility::Hidden, true);
+            ui->getUiEmu()->onMenuExtra(TEXT_MENU_IPS);
+        } else if (lines.at(highlightIndex)->p_name->getString() == TEXT_MENU_MOVELIST) {
+            // pfbneo move list (出招表) dialog: hide the menu and let the core handle it
+            setVisibility(Visibility::Hidden, true);
+            ui->getUiEmu()->onMenuExtra(TEXT_MENU_MOVELIST);
         } else if (lines.at(highlightIndex)->p_name->getString() == TEXT_MENU_RESET) {
             // pfbneo in-game reset: hide the menu, let the core latch a reset
             // request (it resumes the game itself)
@@ -712,7 +764,18 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
 		{
 			setVisibility(Visibility::Hidden, true);
 			if (isEmuRunning) {
-				ui->getUiEmu()->resume();
+				// a dialog may have changed a setting that needs a restart:
+				// action 1 = soft reset (DIP / memory card), action 2 = reload
+				// the game (IPS rom patches are only applied at load time)
+				int action = ui->getUiEmu()->takeSettingsAction();
+				if (action == 2) {
+					ui->getUiEmu()->reload();
+				} else if (action == 1) {
+					ui->getUiEmu()->requestReset();
+					ui->getUiEmu()->resume();
+				} else {
+					ui->getUiEmu()->resume();
+				}
 			}
 		}
     }

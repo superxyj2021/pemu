@@ -14,6 +14,10 @@
 #include <cctype>
 #include <cstdlib>
 #include <utility>
+#include <algorithm>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unordered_map>
 
 namespace pfbneo_cheat {
 
@@ -276,8 +280,6 @@ namespace pfbneo_cheat {
         bool menu = false;              // current cheat takes options on 0x10000 lines
         int n = 0;                      // option index inside the current cheat
         bool loaded = false;            // at least one real cheat parsed
-        bool found = false;             // the ":<rom>:" section was seen at all
-        bool active = false;            // currently inside this section
     };
 
     // parse one entry line into a section context. flag interpretation is the
@@ -454,67 +456,237 @@ namespace pfbneo_cheat {
     // .ini lookup (which has HIGHER priority than the parent dat) is done.
     static std::vector<PfbCheat> s_datParentCheats;
 
-    // load a mame-style .dat database in ONE single pass for both the own rom
-    // and (optionally) its parent rom. own-rom cheats are committed into
-    // s_cheats immediately; parent-rom cheats go into s_datParentCheats for
-    // the caller to commit only if the parent .ini also misses.
-    // returns: 0 = nothing, 1 = own rom section, 2 = parent rom section.
-    static int loadMameFile(const std::string &path, const std::string &romName,
-                            const std::string &parentName) {
-        FILE *f = fopen(path.c_str(), "rt");
-        if (!f) {
-            return 0;
+    // ---- mame database cache ----------------------------------------------
+    //
+    // the mame databases are big (cheat.dat is a multi-megabyte file with
+    // thousands of rom sections) and would otherwise be rescanned from the
+    // start on EVERY game load (up to the ----:REASON end marker for roms
+    // without an entry). to keep game loading fast the file is read ONCE per
+    // session into memory and a rom-name -> byte-range index is built; each
+    // game load then parses only its own (and optionally the parent) section.
+    // the cache is invalidated when the file mtime/size changes.
+
+    struct DatSection {
+        std::string rom;
+        size_t start = 0;   // offset of the ":<rom>:" header line
+    };
+
+    struct DatIndex {
+        std::string path;
+        time_t mtime = 0;
+        long size = -1;
+        std::string data;               // whole file (a few MB, read once)
+        std::vector<DatSection> sections;
+        size_t fileEnd = 0;             // offset of "----:REASON" (or EOF)
+        bool valid = false;
+    };
+
+    // one cache slot per database file: several .dat databases can live in the
+// cheats directory at once (cheat.dat, wayder_cheat.dat, NES/SNES ones,
+// custom ones), and each game load may need a different one.
+static std::unordered_map<std::string, DatIndex> s_indexes;
+
+static bool fileStamp(const std::string &path, time_t &mtime, long &size) {
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0) {
+        return false;
+    }
+    mtime = st.st_mtime;
+    size = st.st_size;
+    return true;
+}
+
+// read the whole file and build the section index (light scan: only the
+// ":<rom>:" prefix of each line is extracted, entries are NOT parsed).
+static void buildIndex(const std::string &path) {
+    DatIndex idx;
+    idx.path = path;
+
+    FILE *f = fopen(path.c_str(), "rb");
+    if (!f) {
+        s_indexes.erase(path);
+        return;
+    }
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (sz > 64 * 1024 * 1024) {   // sanity cap
+        fclose(f);
+        s_indexes.erase(path);
+        return;
+    }
+    idx.data.resize((size_t) sz);
+    size_t rd = fread(idx.data.data(), 1, (size_t) sz, f);
+    fclose(f);
+    if (rd != (size_t) sz) {
+        s_indexes.erase(path);
+        return;
+    }
+    idx.fileEnd = idx.data.size();
+
+    std::string current;
+    size_t pos = 0;
+    while (pos < idx.data.size()) {
+        size_t nl = idx.data.find('\n', pos);
+        if (nl == std::string::npos) {
+            nl = idx.data.size();
         }
-
-        char line[2048];
-        MameCtx own;
-        MameCtx par;
-        std::string gOwn = ":" + romName + ":";
-        std::string gPar = parentName.empty() ? std::string() : (":" + parentName + ":");
-
-        while (fgets(line, sizeof(line), f)) {
-            std::string trimmed = trim(line);
-            if (trimmed.empty()) {
-                continue;
+        size_t lineStart = pos;
+        pos = nl + 1;
+        if (idx.data[lineStart] == ';') {
+            continue;
+        }
+        if (idx.data[lineStart] != ':') {
+            // end-of-database marker ("----:REASON" is its own line).
+            // NOTE: only check WITHIN the current line - a whole-file
+            // find() here would scan to EOF for every comment/blank line
+            // and make indexing quadratic (a freeze on big databases).
+            if (nl - lineStart >= 11
+                && idx.data.compare(lineStart, 11, "----:REASON") == 0) {
+                idx.fileEnd = lineStart;   // end of the database
+                break;
             }
-            if (trimmed[0] == ';') {
-                continue;
-            }
-            if (trimmed.find("----:REASON") != std::string::npos) {
-                break;  // end of the database file
-            }
+            continue;
+        }
+        // entry line ":<rom>:...": a new section starts when the rom name
+        // differs from the previous line's rom
+        size_t c1 = idx.data.find(':', lineStart + 1);
+        if (c1 == std::string::npos || c1 >= nl) {
+            continue;
+        }
+        std::string rom = idx.data.substr(lineStart + 1, c1 - lineStart - 1);
+        if (rom != current) {
+            current = rom;
+            DatSection s;
+            s.rom = rom;
+            s.start = lineStart;
+            idx.sections.push_back(s);
+        }
+    }
+    idx.valid = true;
+    s_indexes[path] = std::move(idx);
+}
 
-            bool mOwn = trimmed.compare(0, gOwn.size(), gOwn) == 0;
-            bool mPar = !gPar.empty() && trimmed.compare(0, gPar.size(), gPar) == 0;
-            if (mOwn) {
-                own.found = true;
-                own.active = true;
-                par.active = false;
-                mameParseLine(own, line);
-            } else if (mPar) {
-                par.found = true;
-                par.active = true;
-                own.active = false;
-                mameParseLine(par, line);
-            } else {
-                // a line of another rom ends whatever section was active; once
-                // both target sections are over, later lines are irrelevant
-                own.active = false;
-                par.active = false;
-                if (own.found && par.found) {
+static bool ensureIndex(const std::string &path) {
+    time_t mtime = 0;
+    long size = -1;
+    if (!fileStamp(path, mtime, size)) {
+        s_indexes.erase(path);
+        return false;
+    }
+    auto it = s_indexes.find(path);
+    if (it != s_indexes.end() && it->second.valid
+        && it->second.mtime == mtime && it->second.size == size) {
+        return true;   // cache still valid
+    }
+    buildIndex(path);
+    it = s_indexes.find(path);
+    if (it != s_indexes.end()) {
+        it->second.mtime = mtime;
+        it->second.size = size;
+    }
+    return it != s_indexes.end() && it->second.valid;
+}
+
+// sorted list of *.dat filenames in a directory, excluding the given names
+static std::vector<std::string> datFilesInDir(const std::string &dir,
+                                              const std::vector<std::string> &exclude) {
+    std::vector<std::string> out;
+    DIR *d = opendir(dir.c_str());
+    if (d) {
+        struct dirent *e;
+        while ((e = readdir(d)) != nullptr) {
+            std::string name = e->d_name;
+            if (name == "." || name == "..") continue;
+            size_t dot = name.rfind('.');
+            if (dot == std::string::npos) continue;
+            std::string ext = name.substr(dot);
+            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+            if (ext != ".dat") continue;
+            bool skip = false;
+            for (const auto &x : exclude) {
+                if (x == name) {
+                    skip = true;
                     break;
                 }
             }
+            if (!skip) out.push_back(name);
         }
-        fclose(f);
+        closedir(d);
+        std::sort(out.begin(), out.end());
+    }
+    return out;
+}
+
+    // parse one rom's section (all lines in [start, end) belong to that rom).
+    static bool parseSection(const DatIndex &idx, size_t start, size_t end,
+                             std::vector<PfbCheat> &out) {
+        MameCtx c;
+        size_t pos = start;
+        while (pos < end) {
+            size_t nl = idx.data.find('\n', pos);
+            if (nl == std::string::npos || nl >= end) {
+                nl = end;
+            }
+            std::string line(idx.data, pos, nl - pos);
+            pos = nl + 1;
+            if (line.empty()) {
+                continue;
+            }
+            if (line.back() == '\r') {
+                line.pop_back();
+            }
+            if (line[0] == ';') {
+                continue;
+            }
+            mameParseLine(c, line.c_str());
+        }
+        out = std::move(c.cheats);
+        return c.loaded;
+    }
+
+    // load a mame-style .dat database using the in-memory section index.
+    // own-rom cheats are committed into s_cheats immediately; parent-rom
+    // cheats go into s_datParentCheats for the caller to commit only if the
+    // parent .ini also misses.
+    // returns: 0 = nothing, 1 = own rom section, 2 = parent rom section.
+    static int loadMameFile(const std::string &path, const std::string &romName,
+                            const std::string &parentName) {
+        if (!ensureIndex(path)) {
+            return 0;
+        }
+        const DatIndex &idx = s_indexes[path];
+
+        std::vector<PfbCheat> own;
+        std::vector<PfbCheat> par;
+        bool ownLoaded = false;
+        bool parLoaded = false;
+
+        for (size_t i = 0; i < idx.sections.size(); i++) {
+            const DatSection &s = idx.sections[i];
+            if (s.rom != romName && (parentName.empty() || s.rom != parentName)) {
+                continue;
+            }
+            size_t end = (i + 1 < idx.sections.size())
+                             ? idx.sections[i + 1].start
+                             : idx.fileEnd;
+            if (s.rom == romName) {
+                ownLoaded = parseSection(idx, s.start, end, own);
+            } else {
+                parLoaded = parseSection(idx, s.start, end, par);
+            }
+            if (ownLoaded && parLoaded) {
+                break;
+            }
+        }
 
         // own rom section takes priority; parent section is only a fallback
-        if (own.loaded) {
-            s_cheats.insert(s_cheats.end(), own.cheats.begin(), own.cheats.end());
+        if (ownLoaded) {
+            s_cheats.insert(s_cheats.end(), own.begin(), own.end());
             return 1;
         }
-        if (par.loaded) {
-            s_datParentCheats = std::move(par.cheats);
+        if (parLoaded) {
+            s_datParentCheats = std::move(par);
             return 2;
         }
         return 0;
@@ -637,13 +809,28 @@ namespace pfbneo_cheat {
             g_sourceRom = drvName;
         } else {
             int r = 0;
+            std::vector<std::string> tried;   // fixed databases already looked at
             if (HW_GGENIE) {
                 std::string db = HW_NES ? "cheatnes.dat" : "cheatsnes.dat";
+                tried.push_back(db);
                 r = loadMameFile(dir + db, drvName, parentName);
             } else {
+                tried.push_back("cheat.dat");
                 r = loadMameFile(dir + "cheat.dat", drvName, parentName);
                 if (r == 0) {
+                    tried.push_back("wayder_cheat.dat");
                     r = loadMameFile(dir + "wayder_cheat.dat", drvName, parentName);
+                }
+            }
+            if (r == 0) {
+                // fallback: the cheats directory may hold OTHER .dat cheat
+                // databases (custom ones); try each in sorted order
+                auto others = datFilesInDir(dir, tried);
+                for (const auto &f : others) {
+                    r = loadMameFile(dir + f, drvName, parentName);
+                    if (r != 0) {
+                        break;
+                    }
                 }
             }
             if (r == 1) {
@@ -697,6 +884,22 @@ namespace pfbneo_cheat {
     void reset() {
         s_cheats.clear();
         bCheatsAllowed = false;
+    }
+
+    void preload() {
+        // index EVERY cheat database .dat file found in the cheats directory
+        // (multiple databases can coexist: cheat.dat, wayder_cheat.dat, NES/
+        // SNES ones, custom ones) so the first game load never pays the file
+        // read+index scan; the index map keeps one entry per file.
+        std::string base = "./";
+        if (c2d_renderer && c2d_renderer->getIo()) {
+            base = c2d_renderer->getIo()->getDataPath();
+            if (base.empty()) base = "./";
+        }
+        auto files = datFilesInDir(base + "cheats/", {});
+        for (const auto &f : files) {
+            ensureIndex(base + "cheats/" + f);
+        }
     }
 
     // ---- dialog accessors ----------------------------------------------------

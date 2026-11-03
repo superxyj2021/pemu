@@ -188,6 +188,11 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
 
     printf("RomList::build(): list built in %f\n", ui->getElapsedTime().asSeconds() - time_start);
 
+    // the scan (startup or manual rescan) is done: let the core rebuild any
+    // lazy lookup tables (pfbneo command.dat / cheat databases) so the first
+    // menu open or game load does not parse them on the spot
+    ui->getConfig()->onRomScanCompleted();
+
     // =====================================================================
     // 中文显示优化：预渲染字形（precache）
     // 首次进入 rom list 时一次性把所有列表/信息面板会用到的字符按主要

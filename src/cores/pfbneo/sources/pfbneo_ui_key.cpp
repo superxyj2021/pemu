@@ -133,11 +133,10 @@ void PfbneKeyDialog::close() {
         ui->getConfig()->saveGame();
     }
 
-    // the rom menu was hidden when the dialog was opened: resume the game if
-    // one is running, otherwise re-open the rom menu
-    if (ui->getUiEmu() && ui->getUiEmu()->isVisible()) {
-        ui->getUiEmu()->resume();
-    } else {
+    // return to the ui menu, highlighting the option that opened the dialog
+    // (the rom menu was hidden when the dialog was opened)
+    if (ui->getUiMenu()) {
+        ui->getUiMenu()->setRestoreOption(TEXT_MENU_KEYS);
         ui->getUiMenu()->load(true);
     }
 }

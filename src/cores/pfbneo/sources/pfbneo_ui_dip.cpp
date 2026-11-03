@@ -116,6 +116,7 @@ void PfbneDipDialog::open() {
 
     optionIndex = 0;
     highlightIndex = 0;
+    m_changed = false;
     title->setString(TEXT_MENU_DIP);
     emptyText->setString(TEXT_DIP_EMPTY);
 
@@ -134,12 +135,16 @@ void PfbneDipDialog::close() {
         ui->getConfig()->saveGame();
     }
 
-    // the rom menu was hidden when the dialog was opened: resume the game if
-    // one is running, otherwise re-open the rom menu
-    if (ui->getUiEmu() && ui->getUiEmu()->isVisible()) {
-        ui->getUiEmu()->resume();
-    } else {
+    // return to the ui menu, highlighting the option that opened the dialog
+    // (the rom menu was hidden when the dialog was opened)
+    if (ui->getUiMenu()) {
+        ui->getUiMenu()->setRestoreOption(TEXT_MENU_DIP);
         ui->getUiMenu()->load(true);
+    }
+
+    // hint: the changes only latch at reset (the menu close triggers it)
+    if (m_changed && ui->getUiStatusBox()) {
+        ui->getUiStatusBox()->show(TEXT_HINT_DIP_CHANGED);
     }
 }
 
@@ -295,12 +300,14 @@ bool PfbneDipDialog::onInput(c2d::Input::Player *players) {
             }
             pfbneo_dip::applyRow(idx);
             updateLines();
-            // most drivers only latch DIP switches at init/reset: request a
-            // soft reset so the change actually takes effect (same behaviour
-            // as the FBNeo SDL client, which resets after every DIP change)
-            if (ui->getUiEmu() && ui->getUiEmu()->isVisible()) {
-                ui->getUiEmu()->requestReset();
+            // most drivers only latch DIP switches at init/reset: remember
+            // the change so a soft reset is triggered when the menu closes
+            // (see UiMenu B-handler / PFBAUiEmu::markSettingsAction). the
+            // values were applied to GameInp[] immediately by applyRow().
+            if (ui->getUiEmu()) {
+                ui->getUiEmu()->markSettingsAction(1);
             }
+            m_changed = true;
         }
         return true;
     }

@@ -150,10 +150,12 @@ void PfbneCheatDialog::open() {
 
 void PfbneCheatDialog::close() {
     setVisibility(Visibility::Hidden, false);
-    // the rom menu was hidden when the dialog was opened (UiMenu A-key branch),
-    // so resume the game directly.
-    if (ui->getUiEmu()) {
-        ui->getUiEmu()->resume();
+    // return to the ui menu, highlighting the option that opened the dialog
+    // (the rom menu was hidden when the dialog was opened; the cheat
+    // selections were already persisted by the cheat module)
+    if (ui->getUiMenu()) {
+        ui->getUiMenu()->setRestoreOption(TEXT_CHEATS);
+        ui->getUiMenu()->load(true);
     }
 }
 
