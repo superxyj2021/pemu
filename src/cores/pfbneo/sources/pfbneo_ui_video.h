@@ -14,7 +14,8 @@ namespace pemu {
         PFBAVideo(UiMain *ui, uint8_t **pixels, int *pitch, const c2d::Vector2i &size,
                   const c2d::Vector2i &aspect = {4, 3});
 
-        void updateScaling(bool vertical = false, bool flip = false) override;
+        void updateScaling(bool vertical = false, bool flip = false,
+                           const c2d::FloatRect *target = nullptr) override;
     };
 }
 

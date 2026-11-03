@@ -33,6 +33,10 @@ namespace pemu {
         // the menu entry is hidden when this returns false.
         virtual bool hasExtraFeature(const std::string &name) { (void) name; return false; }
 
+        // called when the "遮罩/边框" (bezel) menu option changes while a game
+        // is running; cores that render a bezel reload it live here
+        virtual void onBezelChanged() {}
+
         // request a soft game reset (like the in-game "reset game" entry);
         // used by dialogs whose changes only take effect on a reset.
         virtual void requestReset() {}

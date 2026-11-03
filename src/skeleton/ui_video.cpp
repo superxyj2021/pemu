@@ -16,7 +16,7 @@ C2DUIVideo::C2DUIVideo(UiMain *u, uint8_t **_pixels, int *_pitch,
     }
 }
 
-void C2DUIVideo::updateScaling(const bool vertical, const bool flip) {
+void C2DUIVideo::updateScaling(const bool vertical, const bool flip, const c2d::FloatRect *target) {
     bool rotated = false;
     float rotation = 0;
     int rotation_cfg = 0;
@@ -30,6 +30,14 @@ void C2DUIVideo::updateScaling(const bool vertical, const bool flip) {
     }
 
     Vector2f screen = ui->getSize();
+    // bezel viewport: contain the game inside the target rect instead of the
+    // whole screen; the rect is in screen pixel coordinates
+    Vector2f targetPos = {screen.x / 2.f, screen.y / 2.f};
+    Vector2f targetSize = screen;
+    if (target) {
+        targetPos = {target->left + target->width / 2.f, target->top + target->height / 2.f};
+        targetSize = {target->width, target->height};
+    }
     Vector2f scale_max;
     Vector2f scale;
 
@@ -52,11 +60,11 @@ void C2DUIVideo::updateScaling(const bool vertical, const bool flip) {
     }
 
     if (rotated) {
-        scale_max.x = screen.x / (float) getTextureRect().height;
-        scale_max.y = screen.y / (float) getTextureRect().width;
+        scale_max.x = targetSize.x / (float) getTextureRect().height;
+        scale_max.y = targetSize.y / (float) getTextureRect().width;
     } else {
-        scale_max.x = screen.x / (float) getTextureRect().width;
-        scale_max.y = screen.y / (float) getTextureRect().height;
+        scale_max.x = targetSize.x / (float) getTextureRect().width;
+        scale_max.y = targetSize.y / (float) getTextureRect().height;
     }
 
     if (scale_value == TEXT_SCALING_FULL) {
@@ -103,7 +111,7 @@ void C2DUIVideo::updateScaling(const bool vertical, const bool flip) {
            vertical, flip, rotation_cfg);
 
     setOrigin(Origin::Center);
-    setPosition(screen.x / 2, screen.y / 2);
+    setPosition(targetPos.x, targetPos.y);
     setScale(scale);
     setRotation(rotation);
 }

@@ -14,9 +14,14 @@ namespace pemu {
         C2DUIVideo(UiMain *ui, uint8_t **pixels, int *pitch, const c2d::Vector2i &size,
                    const c2d::Vector2i &aspect = {4, 3}, c2d::Texture::Format format = c2d::Texture::Format::RGB565);
 
-        virtual void updateScaling(bool vertical = false, bool flip = false);
+        // target (optional): contain the game inside this pixel rect instead of the
+// full screen (used by the bezel viewport); nullptr = full screen.
+        virtual void updateScaling(bool vertical = false, bool flip = false,
+                                   const c2d::FloatRect *target = nullptr);
 
         c2d::Vector2i aspect;
+
+        UiMain *getUi() { return ui; }
 
     private:
 

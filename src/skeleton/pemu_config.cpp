@@ -143,6 +143,10 @@ PEMUConfig::PEMUConfig(Renderer *renderer, const std::string &name, int version)
      * Emulators options
      */
     Group emu_grp("EMULATION", EMULATION, TEXT_MENU_EMULATION);
+    // pfbneo bezel (遮罩/边框): created here (hidden) so it lists ABOVE the
+    // scaling option; the pfbneo core config unhides it
+    emu_grp.addOption({"BEZEL", {TEXT_BEZEL_ON, TEXT_BEZEL_OFF}, 0, EMU_BEZEL, "", TEXT_MENU_BEZEL})
+            ->setFlags(PEMUConfig::Flags::HIDDEN);
     if (displaySize.y > 1080) {
         emu_grp.addOption(
             {

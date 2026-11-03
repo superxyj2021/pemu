@@ -44,6 +44,7 @@ namespace pemu {
             EMU_SCALING_MODE,
             EMU_FILTER,
             EMU_SHADER,
+            EMU_BEZEL,
 #ifdef __VITA__
             EMU_WAIT_RENDERING,
 #endif

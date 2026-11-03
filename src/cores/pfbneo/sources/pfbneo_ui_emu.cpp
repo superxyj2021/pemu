@@ -22,6 +22,7 @@
 #include "fbneo/pfbneo_memcard.h"
 #include "fbneo/pfbneo_ips.h"
 #include "fbneo/pfbneo_movelist.h"
+#include "fbneo/pfbneo_bezel.h"
 #include "retro_input_wrapper.h"
 
 #include <chrono>
@@ -499,6 +500,11 @@ int PFBAUiEmu::load(const ss_api::Game &game) {
     // runtime-only: nothing is persisted, all cheats start inactive.
     pfbneo_cheat::load(game, pMain->getIo());
 
+    // pfbneo bezel: load the game's bezel background (per the menu mode) and
+    // add it BEHIND the video texture; updateScaling() then fits the game
+    // inside the bezel's hollow viewport
+    applyBezel();
+
 #ifdef __SWITCH__
     // apply the emulation performance mode (0 = power save, 1 = full speed).
     // per-rom value takes priority over the global one (see PEMUConfig::loadGame).
@@ -525,6 +531,64 @@ void Reinitialise(void) {
 void ReinitialiseVideo()
 {
 	Reinitialise();
+}
+
+void PFBAUiEmu::applyBezel() {
+    // remove any previously loaded bezel first
+    if (pfbneo_bezel::isActive()) {
+        printf("pfbneo_bezel: applyBezel: removing previous\n");
+        remove(pfbneo_bezel::getSprite());
+    }
+    pfbneo_bezel::unload();
+
+    // menu mode: 0 = 开, 1 = 关
+    auto *bezelOpt = pMain->getConfig()->get(PEMUConfig::OptId::EMU_BEZEL, true);
+    int mode = bezelOpt ? bezelOpt->getArrayIndex() : 0;
+    printf("pfbneo_bezel: applyBezel: mode = %i (%s)\n", mode,
+           bezelOpt ? bezelOpt->getString().c_str() : "?");
+    if (mode == 1) {
+        printf("pfbneo_bezel: applyBezel: disabled\n");
+        return;
+    }
+
+    // bezel on -> force fit-screen scaling (the bezel fills the screen and
+    // the game is contained inside its hollow viewport)
+    auto *scalingOpt = pMain->getConfig()->get(PEMUConfig::OptId::EMU_SCALING, true);
+    if (scalingOpt && scalingOpt->getString() != TEXT_SCALING_FIT) {
+        scalingOpt->setArrayIndex(TEXT_SCALING_FIT);
+        printf("pfbneo_bezel: applyBezel: forced scaling to %s\n", TEXT_SCALING_FIT);
+    }
+
+    const char *drv = BurnDrvGetTextA(DRV_NAME);
+    const char *par = BurnDrvGetTextA(DRV_PARENT);
+    if (!drv || !drv[0]) {
+        printf("pfbneo_bezel: applyBezel: no driver name yet\n");
+        return;
+    }
+    unsigned int hw = BurnDrvGetHardwareCode();
+    bool vertical = (BurnDrvGetFlags() & BDF_ORIENTATION_VERTICAL) != 0;
+    if (!pfbneo_bezel::load(drv, par ? par : "", hw, vertical)) {
+        printf("pfbneo_bezel: applyBezel: load failed\n");
+        return;
+    }
+
+    c2d::Texture *sprite = pfbneo_bezel::getSprite();
+    if (sprite) {
+        // draw BEHIND the video texture (lower layer sorts first)
+        sprite->setLayer(-1);
+        add(sprite);
+        if (video) {
+            video->updateScaling();
+        }
+        printf("pfbneo_bezel: applyBezel: sprite added (layer -1), size %ix%i\n",
+               sprite->getTextureSize().x, sprite->getTextureSize().y);
+    } else {
+        printf("pfbneo_bezel: applyBezel: sprite is null\n");
+    }
+}
+
+void PFBAUiEmu::onBezelChanged() {
+    applyBezel();
 }
 
 void PFBAUiEmu::stop() {
@@ -558,6 +622,11 @@ void PFBAUiEmu::stop() {
     if (movelistDialog) {
         movelistDialog->setVisibility(Visibility::Hidden, true);
     }
+    // pfbneo bezel: remove the background sprite from the tree and free it
+    if (pfbneo_bezel::isActive()) {
+        remove(pfbneo_bezel::getSprite());
+    }
+    pfbneo_bezel::unload();
     m_resetRequested = false;
     m_settingsAction = 0;
     pfbneo_cheat::reset();

@@ -580,7 +580,6 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
             }
 
             case PEMUConfig::OptId::EMU_ROTATION:
-            case PEMUConfig::OptId::EMU_SCALING:
                 if (isEmuRunning) {
                     ui->getUiEmu()->getVideo()->updateScaling();
                     auto gw = (float) ui->getUiEmu()->getVideo()->getTextureRect().width;
@@ -597,6 +596,40 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
                             TEXT_MSG_DISPLAY_INFO,
                             (int) gw, (int) gh, gr, (int) ow, (int) oh, ratio,
                             ui->getUiEmu()->getVideo()->getScale().x, ui->getUiEmu()->getVideo()->getScale().y);
+                }
+                break;
+            case PEMUConfig::OptId::EMU_SCALING:
+                {
+                    // pfbneo bezel linkage (all menus): a non fit-screen
+                    // scaling turns the bezel off (bezel on forces fit-screen)
+                    auto *bezel = ui->getConfig()->get(PEMUConfig::OptId::EMU_BEZEL, true);
+                    if (bezel && !(bezel->getFlags() & PEMUConfig::Flags::HIDDEN)) {
+                        if (option->getString() != TEXT_SCALING_FIT && bezel->getArrayIndex() == 0) {
+                            bezel->setArrayIndex(1); // 关
+                            if (isEmuRunning) {
+                                ui->getUiEmu()->onBezelChanged();
+                            }
+                            updateLines(); // refresh the bezel menu line value
+                        }
+                    }
+                    if (isEmuRunning) {
+                        ui->getUiEmu()->getVideo()->updateScaling();
+                        auto gw = (float) ui->getUiEmu()->getVideo()->getTextureRect().width;
+                        auto gh = (float) ui->getUiEmu()->getVideo()->getTextureRect().height;
+                        float gr = std::max(
+                                (float) ui->getUiEmu()->getVideo()->aspect.x /
+                                (float) ui->getUiEmu()->getVideo()->aspect.y,
+                                (float) ui->getUiEmu()->getVideo()->aspect.y /
+                                (float) ui->getUiEmu()->getVideo()->aspect.x);
+                        float ow = gw * ui->getUiEmu()->getVideo()->getScale().x;
+                        float oh = gh * ui->getUiEmu()->getVideo()->getScale().y;
+                        float ratio = std::max(ow / oh, oh / ow);
+                        ui->getUiStatusBox()->show(
+                                TEXT_MSG_DISPLAY_INFO,
+                                (int) gw, (int) gh, gr, (int) ow, (int) oh, ratio,
+                                ui->getUiEmu()->getVideo()->getScale().x,
+                                ui->getUiEmu()->getVideo()->getScale().y);
+                    }
                 }
                 break;
             case PEMUConfig::OptId::EMU_SCALING_MODE:
@@ -632,6 +665,28 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
                 if (isEmuRunning) {
                     ui->getUiEmu()->getVideo()->setShader(option->getArrayIndex());
                     ui->getUiStatusBox()->show(option->getString());
+                }
+                break;
+            case PEMUConfig::OptId::EMU_BEZEL:
+                {
+                    // pfbneo bezel linkage (all menus): turning the bezel on
+                    // forces the fit-screen scaling
+                    bool scalingChanged = false;
+                    if (option->getArrayIndex() == 0) {
+                        auto *scaling = ui->getConfig()->get(PEMUConfig::OptId::EMU_SCALING, true);
+                        if (scaling && scaling->getString() != TEXT_SCALING_FIT) {
+                            scaling->setArrayIndex(TEXT_SCALING_FIT);
+                            scalingChanged = true;
+                        }
+                    }
+                    if (isEmuRunning) {
+                        // applyBezel also forces fit-screen on a live game
+                        ui->getUiEmu()->onBezelChanged();
+                        ui->getUiStatusBox()->show(option->getString());
+                    }
+                    if (scalingChanged) {
+                        updateLines(); // refresh the scaling menu line value
+                    }
                 }
                 break;
 #ifdef __VITA__

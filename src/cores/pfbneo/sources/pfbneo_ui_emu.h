@@ -43,11 +43,18 @@ public:
     // a runtime input callback, which the c2d render traversal may skip.
     void attachToUi() override;
 
+    // live-reload the bezel when the "遮罩/边框" menu option changes
+    void onBezelChanged() override;
+
 private:
 
 #ifdef __PFBA_ARM__
     int getSekCpuCore();
 #endif
+
+    // load the game's bezel (respecting the "遮罩/边框" menu mode) and add it
+    // behind the video texture; called on game load and when the mode changes
+    void applyBezel();
 
     bool onInput(c2d::Input::Player *players) override;
 

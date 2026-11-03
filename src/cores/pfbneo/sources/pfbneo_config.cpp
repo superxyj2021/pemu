@@ -73,6 +73,12 @@ PFBAConfig::PFBAConfig(Renderer *renderer, const int version) : PEMUConfig(rende
     group->addOption({"ROTATION", {"OFF", "ON", "FLIP"},
                       1, EMU_ROTATION, TEXT_MSG_RESTART_NEEDED, TEXT_MENU_ROTATION});
 #endif
+    // pfbneo bezel (遮罩/边框): the option is created in the skeleton
+    // EMULATION group ABOVE the scaling option (hidden there); unhide it.
+    // bezel and scaling are linked (see applyBezel / the EMU_SCALING menu
+    // handler): bezel on forces fit-screen scaling, a non-fit scaling turns
+    // the bezel off.
+    get(EMU_BEZEL)->setFlags(0);
     group->addOption(
             {"NEOBIOS", {"UniBIOS 4.0", "UniBIOS 3.3", "UniBIOS 3.2", "UniBIOS 3.1",
                          "MVS 亚欧版 V6S1", "MVS 亚欧版 V5S1", "MVS 亚欧版 V3S4",
