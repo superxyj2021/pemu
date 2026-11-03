@@ -664,7 +664,16 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
             case PEMUConfig::OptId::EMU_SHADER:
                 if (isEmuRunning) {
                     ui->getUiEmu()->getVideo()->setShader(option->getArrayIndex());
-                    ui->getUiStatusBox()->show(option->getString());
+                }
+                {
+                    // show the recommended texture filter hint for this effect
+                    // in every menu (main menu / rom menu / in-game menu)
+                    const std::string hint = PEMUConfig::shaderFilterHint(option->getString());
+                    if (hint.empty()) {
+                        ui->getUiStatusBox()->show(option->getString());
+                    } else {
+                        ui->getUiStatusBox()->show("%s：%s", option->getString().c_str(), hint.c_str());
+                    }
                 }
                 break;
             case PEMUConfig::OptId::EMU_BEZEL:

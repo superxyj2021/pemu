@@ -15,41 +15,91 @@ using namespace ss_api;
 // by array index, so the order is what matters, not the strings themselves.
 static std::string shaderDisplayName(const std::string &name) {
     static const std::unordered_map<std::string, std::string> names = {
-            {"c2d-texture", "无特效"},
-            {"crt-aperture", "CRT 孔径"},
-            {"crt-caligari", "CRT Caligari"},
-            {"crt-cgwg-fast", "CRT CGWG 快速"},
-            {"crt-easymode", "CRT 简易模式"},
-            {"crt-fakelottes", "CRT 简易 Lottes"},
-            {"crt-geom", "CRT 弧面"},
-            {"crt-geom-flat", "CRT 平面"},
-            {"crt-hyllian", "CRT Hyllian"},
-            {"crt-lottes-fast", "CRT Lottes 快速"},
-            {"crt-lottes", "CRT Lottes"},
-            {"crt-mattias", "CRT Mattias"},
-            {"crt-nes-mini", "CRT 迷你 NES"},
-            {"crt-pi", "CRT 树莓派"},
-            {"crt-pi-flat", "CRT 树莓派平面"},
-            {"crt-zfast", "CRT Zfast"},
-            {"handheld-bevel", "掌机 斜面屏"},
-            {"handheld-dot", "掌机 点阵屏"},
-            {"handheld-lcd1x", "掌机 LCD 1x"},
-            {"handheld-lcd3x", "掌机 LCD 3x"},
-            {"handheld-retro-v2", "掌机 复古 v2"},
-            {"handheld-zfast-lcd", "掌机 Zfast LCD"},
-            {"interpolation-aann", "插值 AANN"},
-            {"interpolation-pixellate", "插值 像素化"},
-            {"interpolation-quilez", "插值 Quilez"},
-            {"interpolation-sharp-bilinear", "插值 锐利双线性"},
-            {"interpolation-sharp-bilinear-scanlines", "插值 锐利双线性+扫描线"},
-            {"scanline-simple", "简单扫描线"},
-            {"sharp-2xsal", "锐化 2xSaI"},
-            {"sharp-sabr-v3.0", "锐化 SABR v3.0"},
-            {"sharp-supereagle", "锐化 SuperEagle"},
-            {"sharp-xbrz-freescale", "锐化 xBRZ"},
+            {"c2d-texture", TEXT_EFFECT_C2D_TEXTURE},
+            {"crt-aperture", TEXT_EFFECT_CRT_APERTURE},
+            {"crt-caligari", TEXT_EFFECT_CRT_CALIGARI},
+            {"crt-cgwg-fast", TEXT_EFFECT_CRT_CGWG_FAST},
+            {"crt-consumer", TEXT_EFFECT_CRT_CONSUMER},
+            {"crt-easymode", TEXT_EFFECT_CRT_EASYMODE},
+            {"crt-fakelottes", TEXT_EFFECT_CRT_FAKELOTTES},
+            {"crt-geom", TEXT_EFFECT_CRT_GEOM},
+            {"crt-geom-flat", TEXT_EFFECT_CRT_GEOM_FLAT},
+            {"crt-hyllian", TEXT_EFFECT_CRT_HYLLIAN},
+            {"crt-lottes-fast", TEXT_EFFECT_CRT_LOTTES_FAST},
+            {"crt-lottes", TEXT_EFFECT_CRT_LOTTES},
+            {"crt-mattias", TEXT_EFFECT_CRT_MATTIAS},
+            {"crt-nes-mini", TEXT_EFFECT_CRT_NES_MINI},
+            {"crt-pi", TEXT_EFFECT_CRT_PI},
+            {"crt-pi-flat", TEXT_EFFECT_CRT_PI_FLAT},
+            {"crt-zfast", TEXT_EFFECT_CRT_ZFAST},
+            {"handheld-bevel", TEXT_EFFECT_HANDHELD_BEVEL},
+            {"handheld-dot", TEXT_EFFECT_HANDHELD_DOT},
+            {"handheld-lcd1x", TEXT_EFFECT_HANDHELD_LCD1X},
+            {"handheld-lcd3x", TEXT_EFFECT_HANDHELD_LCD3X},
+            {"handheld-retro-v2", TEXT_EFFECT_HANDHELD_RETRO_V2},
+            {"handheld-zfast-lcd", TEXT_EFFECT_HANDHELD_ZFAST_LCD},
+            {"interpolation-aann", TEXT_EFFECT_INTERPOLATION_AANN},
+            {"interpolation-catmull-rom", TEXT_EFFECT_INTERPOLATION_CATMULL_ROM},
+            {"interpolation-pixellate", TEXT_EFFECT_INTERPOLATION_PIXELLATE},
+            {"interpolation-quilez", TEXT_EFFECT_INTERPOLATION_QUILEZ},
+            {"interpolation-sharp-bilinear", TEXT_EFFECT_INTERPOLATION_SHARP_BILINEAR},
+            {"interpolation-sharp-bilinear-scanlines", TEXT_EFFECT_INTERPOLATION_SHARP_BILINEAR_SCANLINES},
+            {"scanline-simple", TEXT_EFFECT_SCANLINE_SIMPLE},
+            {"sharp-2xsal", TEXT_EFFECT_SHARP_2XSAL},
+            {"sharp-sabr-v3.0", TEXT_EFFECT_SHARP_SABR_V30},
+            {"sharp-supereagle", TEXT_EFFECT_SHARP_SUPEREAGLE},
+            {"sharp-xbrz-freescale", TEXT_EFFECT_SHARP_XBRZ_FREESCALE},
     };
     auto it = names.find(name);
     return it != names.end() ? it->second : name;
+}
+
+// recommended texture sampling filter hint for an EFFECT display name.
+// "强依赖" shaders produce wrong output unless the texture filter matches;
+// "建议" shaders are designed/optimized for that filter but still render
+// with either. empty for the passthrough (无特效) effect.
+std::string PEMUConfig::shaderFilterHint(const std::string &displayName) {
+    static const std::vector<std::pair<std::string, std::string>> hints = {
+            {"interpolation-catmull-rom", TEXT_EFFECT_HINT_DEP_LINEAR_CATMULL_ROM},
+            {"crt-consumer", TEXT_EFFECT_HINT_DEP_LINEAR_CONSUMER},
+            {"interpolation-sharp-bilinear", TEXT_EFFECT_HINT_DEP_LINEAR},
+            {"interpolation-sharp-bilinear-scanlines", TEXT_EFFECT_HINT_DEP_LINEAR},
+            {"crt-fakelottes", TEXT_EFFECT_HINT_LINEAR},
+            {"crt-lottes-fast", TEXT_EFFECT_HINT_LINEAR},
+            {"crt-pi", TEXT_EFFECT_HINT_LINEAR},
+            {"crt-pi-flat", TEXT_EFFECT_HINT_LINEAR},
+            {"crt-zfast", TEXT_EFFECT_HINT_LINEAR},
+            {"handheld-zfast-lcd", TEXT_EFFECT_HINT_LINEAR},
+            {"interpolation-aann", TEXT_EFFECT_HINT_LINEAR},
+            {"interpolation-quilez", TEXT_EFFECT_HINT_LINEAR},
+            {"crt-aperture", TEXT_EFFECT_HINT_POINT},
+            {"crt-caligari", TEXT_EFFECT_HINT_POINT},
+            {"crt-cgwg-fast", TEXT_EFFECT_HINT_POINT},
+            {"crt-easymode", TEXT_EFFECT_HINT_POINT},
+            {"crt-geom", TEXT_EFFECT_HINT_POINT},
+            {"crt-geom-flat", TEXT_EFFECT_HINT_POINT},
+            {"crt-hyllian", TEXT_EFFECT_HINT_POINT},
+            {"crt-lottes", TEXT_EFFECT_HINT_POINT},
+            {"crt-mattias", TEXT_EFFECT_HINT_POINT},
+            {"handheld-bevel", TEXT_EFFECT_HINT_POINT},
+            {"handheld-dot", TEXT_EFFECT_HINT_POINT},
+            {"handheld-lcd1x", TEXT_EFFECT_HINT_POINT},
+            {"handheld-lcd3x", TEXT_EFFECT_HINT_POINT},
+            {"handheld-retro-v2", TEXT_EFFECT_HINT_POINT},
+            {"interpolation-pixellate", TEXT_EFFECT_HINT_POINT_PIXELLATE},
+            {"scanline-simple", TEXT_EFFECT_HINT_POINT},
+            {"sharp-2xsal", TEXT_EFFECT_HINT_POINT},
+            {"sharp-sabr-v3.0", TEXT_EFFECT_HINT_POINT},
+            {"sharp-supereagle", TEXT_EFFECT_HINT_POINT},
+            {"sharp-xbrz-freescale", TEXT_EFFECT_HINT_POINT},
+            {"crt-nes-mini", TEXT_EFFECT_HINT_ANY},
+    };
+    for (const auto &hint : hints) {
+        if (shaderDisplayName(hint.first) == displayName) {
+            return hint.second;
+        }
+    }
+    return "";
 }
 
 PEMUConfig::PEMUConfig(Renderer *renderer, const std::string &name, int version)
@@ -164,7 +214,7 @@ PEMUConfig::PEMUConfig(Renderer *renderer, const std::string &name, int version)
     }
 
     emu_grp.addOption({"SCALING_MODE", {TEXT_SCALING_MODE_AUTO, TEXT_SCALING_MODE_ASPECT, TEXT_SCALING_MODE_INTEGER}, 0, EMU_SCALING_MODE, "", TEXT_MENU_SCALING_MODE});
-    emu_grp.addOption({"FILTER", {"最近邻", "双线性"}, 1, EMU_FILTER, "", TEXT_MENU_FILTER});
+    emu_grp.addOption({"FILTER", {TEXT_OPTION_POINT, TEXT_OPTION_LINEAR}, 1, EMU_FILTER, "", TEXT_MENU_FILTER});
     if (const auto shaderList = p_renderer->getShaderList()) {
         auto shaderNames = shaderList->getNames();
         for (auto &n : shaderNames) {

@@ -116,6 +116,10 @@ namespace pemu {
 
         ~PEMUConfig() override;
 
+        // recommended texture sampling filter hint for an EFFECT display name
+        // (强依赖/建议), empty for the passthrough effect
+        static std::string shaderFilterHint(const std::string &displayName);
+
         bool loadGame(const ss_api::Game &game);
 
         bool saveGame();
