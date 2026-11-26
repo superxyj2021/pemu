@@ -1,12 +1,13 @@
 若您喜欢这款模拟器，不妨请作者喝杯咖啡 ☕✨
 我的灵感与动力或许正源于这杯咖啡~~~
-📌建议各位都看下教程，教程随版本更新随时更新
+![](https://github.com/superxyj2021/pemu/blob/master/src/cores/pfbneo/data/common/romfs/donate/donate.png)
+
+
         
 模拟器简介
 本模拟器基于GitHub上Cpasjuste的pemu项目分支开发而来。目前及未来的目标均是作为FBNeo的Switch前端，不考虑接入其他核心以做成RetroArch类的大而全的全能模拟器。目标是力争做成界面美观、操作使用最人性化的最好用的FBNeo模拟器前端。
 
 
-模拟器界面
 
 
 
